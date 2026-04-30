@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:yannyamba/core/services/storage_service.dart';
 import 'package:yannyamba/core/utils/constants/colors.dart';
 import 'package:yannyamba/features/renters/bookings/controllers/booking_controller.dart';
+import 'package:yannyamba/features/renters/bookings/controllers/my_bookings_controller.dart';
+import 'package:yannyamba/features/owners/bookings/controllers/owner_bookings_controller.dart';
 
 Future<void> showBookingDialog({
   required BuildContext context,
@@ -199,9 +201,16 @@ class _BookingDialogState extends State<_BookingDialog> {
       Navigator.pop(context);
       Get.snackbar(
         'Success',
-        'Booking submitted!',
+        'Booking created successfully!',
         snackPosition: SnackPosition.BOTTOM,
       );
+
+      if (Get.isRegistered<MyBookingsController>()) {
+        Get.find<MyBookingsController>().fetchMyBookings();
+      }
+      if (Get.isRegistered<OwnerBookingsController>()) {
+        Get.find<OwnerBookingsController>().refreshBookings();
+      }
     }
   }
 }

@@ -6,10 +6,29 @@ import 'package:yannyamba/features/renters/bookings/controllers/my_bookings_cont
 import 'package:yannyamba/features/renters/bookings/presentation/screens/my_booking_details_screen.dart';
 import 'package:yannyamba/features/renters/bookings/presentation/widgets/my_booking_card.dart';
 
-class MyBookingsScreen extends StatelessWidget {
-  MyBookingsScreen({super.key});
+class MyBookingsScreen extends StatefulWidget {
+  const MyBookingsScreen({super.key});
 
-  final MyBookingsController _controller = Get.find<MyBookingsController>();
+  @override
+  State<MyBookingsScreen> createState() => _MyBookingsScreenState();
+}
+
+class _MyBookingsScreenState extends State<MyBookingsScreen> {
+  late final MyBookingsController _controller;
+  late final bool _controllerAlreadyRegistered;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllerAlreadyRegistered = Get.isRegistered<MyBookingsController>();
+    _controller = Get.find<MyBookingsController>();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_controllerAlreadyRegistered) {
+        _controller.fetchMyBookings();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
