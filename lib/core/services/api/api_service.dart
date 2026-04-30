@@ -3,7 +3,7 @@
 class ApiService {
   // Base URL - will be configured when API is ready
   static const String baseUrl =
-      'http://46.224.80.189:4000'; // TODO: Update with actual API URL
+      'http://46.224.80.189:5000'; // TODO: Update with actual API URL
 
   // API endpoints
   static const String apartmentsEndpoint = '/api/v1/apartments';

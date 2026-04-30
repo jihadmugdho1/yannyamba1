@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:yannyamba/core/utils/constants/colors.dart';
 import 'package:yannyamba/features/owners/property/presentation/widgets/owner_owner_contact_widget.dart';
 import 'package:yannyamba/features/owners/property/presentation/widgets/owner_reference_widget.dart';
+import 'package:yannyamba/features/renters/bookings/presentation/widgets/booking_dialog.dart';
 import 'package:yannyamba/features/renters/home/controllers/apartment_controller.dart';
 
 import '../../../../renters/home/presentation/widgets/widgets.dart';
@@ -60,6 +62,32 @@ class NormalApartmentsDetails extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+        
+              child: ElevatedButton(
+                
+                onPressed: () => showBookingDialog(
+                  context: context,
+                  apartmentId: apartment.id,
+                ),
+                style: ElevatedButton.styleFrom(
+                   backgroundColor: AppColors.primaryBlue,
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'Book Now',
+                  style: TextStyle(fontFamily: 'Montserrat'),
+                ),
+              ),
+            ),
+          ),
         ),
       );
     });
