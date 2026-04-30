@@ -85,7 +85,7 @@ class MenuScreenController extends GetxController {
       return;
     }
 
-    Get.to(() => MyBookingsScreen());
+    Get.to(() => const MyBookingsScreen());
   }
 
   void navigateToNotifications() {

@@ -12,13 +12,47 @@ import '../../controllers/owner_dashboard_controller.dart';
 import 'package:yannyamba/features/owners/property/presentation/screeens/furnish_apartments_details.dart';
 import 'package:yannyamba/features/owners/property/presentation/screeens/normal_apartments_details.dart';
 
-class OwnerPropertiesScreen extends StatelessWidget {
+class OwnerPropertiesScreen extends StatefulWidget {
   const OwnerPropertiesScreen({super.key});
 
   @override
+  State<OwnerPropertiesScreen> createState() => _OwnerPropertiesScreenState();
+}
+
+class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  late final OwnerDashboardController _dashboardController;
+  late final OwnerBookingsController _bookingsController;
+
+  @override
+  void initState() {
+    super.initState();
+    _dashboardController = Get.find<OwnerDashboardController>();
+    _bookingsController = Get.find<OwnerBookingsController>();
+    _tabController = TabController(length: 3, vsync: this);
+
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      if (_tabController.index == 2) {
+        _bookingsController.refreshBookings();
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _dashboardController.refreshDashboard();
+      _bookingsController.refreshBookings();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.find<OwnerDashboardController>();
-    final bookingsController = Get.find<OwnerBookingsController>();
     return Column(
       children: [
         const OwnerAppBar(userName: 'James'),
@@ -64,53 +98,44 @@ class OwnerPropertiesScreen extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              await Future.wait([
-                controller.refreshDashboard(),
-                bookingsController.refreshBookings(),
-              ]);
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: DefaultTabController(
-                length: 3,
-                child: Column(
-                  children: [
-                    SectionHeader(
-                      title: AppText.myProperties.tr,
-                      actionText: '',
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: const Color(0xFFF5F5F5),
-                      ),
-                      child: const TabBar(
-                        indicatorColor: Colors.black,
-                        labelColor: Colors.black,
-                        unselectedLabelColor: Colors.grey,
-                        tabs: [
-                          Tab(text: "Furnished Apartments"),
-                          Tab(text: "Normal Apartments"),
-                          Tab(text: "My Bookings"),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: TabBarView(
-                        children: [
-                          _buildFurnishedApartmentsList(controller),
-                          _buildNormalApartmentsList(controller),
-                          _buildMyBookingsList(bookingsController),
-                        ],
-                      ),
-                    ),
-                  ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                SectionHeader(
+                  title: AppText.myProperties.tr,
+                  actionText: '',
                 ),
-              ),
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFFF5F5F5),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: Colors.black,
+                    labelColor: Colors.black,
+                    unselectedLabelColor: Colors.grey,
+                    tabs: const [
+                      Tab(text: "Furnished Apartments"),
+                      Tab(text: "Normal Apartments"),
+                      Tab(text: "My Bookings"),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildFurnishedApartmentsList(_dashboardController),
+                      _buildNormalApartmentsList(_dashboardController),
+                      _buildMyBookingsList(_bookingsController),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -120,171 +145,293 @@ class OwnerPropertiesScreen extends StatelessWidget {
 
   Widget _buildNormalApartmentsList(OwnerDashboardController controller) {
     return Obx(() {
-      if (controller.isDashboardLoading.value) {
-        return ListView.builder(
-          padding: EdgeInsets.zero,
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: 3,
-          itemBuilder: (context, index) {
-            return const Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: PropertyCardShimmer(isNormal: true),
+      final isLoading = controller.isDashboardLoading.value;
+      final list = controller.normalApartments;
+      return RefreshIndicator(
+        onRefresh: controller.refreshDashboard,
+        child: Builder(
+          builder: (context) {
+            if (isLoading) {
+              return ListView.builder(
+                padding: EdgeInsets.zero,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: 3,
+                itemBuilder: (context, index) {
+                  return const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: PropertyCardShimmer(isNormal: true),
+                  );
+                },
+              );
+            }
+
+            // list is already captured above
+            if (list.isEmpty) {
+              return ListView(
+                padding: EdgeInsets.zero,
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [SizedBox(height: 400, child: _emptyState())],
+              );
+            }
+
+            return ListView.builder(
+              padding: EdgeInsets.zero,
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: list.length,
+              itemBuilder: (context, index) {
+                final property = list[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: PropertyCard(
+                    imageUrl: property.images.isNotEmpty
+                        ? property.images.first
+                        : 'assets/images/home_image.png',
+                    price: '₣ ${property.rent}',
+                    views: property.totalViews ?? 0,
+                    inquiries: property.inquiries ?? 0,
+                    title: property.title,
+                    address:
+                        '${property.address.street}, ${property.address.city}',
+                    advancePayment:
+                        '${property.propertyDetails.advanceMonths} months',
+                    distance: '${property.distanceToDowntown} km away',
+                    onViewDetails: () {
+                      Get.to(
+                        () => NormalApartmentsDetails(
+                          apartmentId: property.id,
+                        ),
+                      );
+                    },
+                    onDelete: () {
+                      _showDeleteDialog(property.id, property.title, controller);
+                    },
+                    onShare: () {},
+                  ),
+                );
+              },
             );
           },
-        );
-      }
-
-      final list = controller.normalApartments;
-      if (list.isEmpty) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(height: 400, child: _emptyState()),
-        );
-      }
-
-      return ListView.builder(
-        padding: EdgeInsets.zero,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: list.length,
-        itemBuilder: (context, index) {
-          final property = list[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: PropertyCard(
-              imageUrl: property.images.isNotEmpty
-                  ? property.images.first
-                  : 'assets/images/home_image.png',
-              price: '₣ ${property.rent}',
-              views: property.totalViews ?? 0,
-              inquiries: property.inquiries ?? 0,
-              title: property.title,
-              address: '${property.address.street}, ${property.address.city}',
-              advancePayment:
-                  '${property.propertyDetails.advanceMonths} months',
-              distance: '${property.distanceToDowntown} km away',
-              onViewDetails: () {
-                Get.to(() => NormalApartmentsDetails(apartmentId: property.id));
-              },
-              onDelete: () {
-                _showDeleteDialog(property.id, property.title, controller);
-              },
-              onShare: () {},
-            ),
-          );
-        },
+        ),
       );
     });
   }
 
   Widget _buildFurnishedApartmentsList(OwnerDashboardController controller) {
     return Obx(() {
-      if (controller.isDashboardLoading.value) {
-        return ListView.builder(
-          padding: EdgeInsets.zero,
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: 3,
-          itemBuilder: (context, index) {
-            return const Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: PropertyCardShimmer(isNormal: false),
-            );
-          },
-        );
-      }
-
+      final isLoading = controller.isDashboardLoading.value;
       final list = controller.furnishedApartments;
-      if (list.isEmpty) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(height: 400, child: _emptyState()),
-        );
-      }
+      return RefreshIndicator(
+        onRefresh: controller.refreshDashboard,
+        child: Builder(
+          builder: (context) {
+            if (isLoading) {
+              return ListView.builder(
+                padding: EdgeInsets.zero,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: 3,
+                itemBuilder: (context, index) {
+                  return const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: PropertyCardShimmer(isNormal: false),
+                  );
+                },
+              );
+            }
 
-      return ListView.builder(
-        padding: EdgeInsets.zero,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: list.length,
-        itemBuilder: (context, index) {
-          final property = list[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: PropertyCard(
-              imageUrl: property.images.isNotEmpty
-                  ? property.images.first
-                  : 'assets/images/home_image.png',
-              price: '₣ ${property.dailyRate}',
-              isNormal: false,
-              views: property.totalViews ?? 0,
-              inquiries: property.inquiries ?? 0,
-              title: property.title,
-              address: '${property.address.street}, ${property.address.city}',
-              advancePayment:
-                  '${property.propertyDetails.advanceMonths} months',
-              distance: '${property.distanceToDowntown} km away',
-              onViewDetails: () {
-                Get.to(
-                  () => FurnishedApartmentDetails(apartmentId: property.id),
+            // list is already captured above
+            if (list.isEmpty) {
+              return ListView(
+                padding: EdgeInsets.zero,
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [SizedBox(height: 400, child: _emptyState())],
+              );
+            }
+
+            return ListView.builder(
+              padding: EdgeInsets.zero,
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: list.length,
+              itemBuilder: (context, index) {
+                final property = list[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: PropertyCard(
+                    imageUrl: property.images.isNotEmpty
+                        ? property.images.first
+                        : 'assets/images/home_image.png',
+                    price: '₣ ${property.dailyRate}',
+                    isNormal: false,
+                    views: property.totalViews ?? 0,
+                    inquiries: property.inquiries ?? 0,
+                    title: property.title,
+                    address:
+                        '${property.address.street}, ${property.address.city}',
+                    advancePayment:
+                        '${property.propertyDetails.advanceMonths} months',
+                    distance: '${property.distanceToDowntown} km away',
+                    onViewDetails: () {
+                      Get.to(
+                        () => FurnishedApartmentDetails(
+                          apartmentId: property.id,
+                        ),
+                      );
+                    },
+                    onDelete: () {
+                      _showDeleteDialog(property.id, property.title, controller);
+                    },
+                    onShare: () {},
+                  ),
                 );
               },
-              onDelete: () {
-                _showDeleteDialog(property.id, property.title, controller);
-              },
-              onShare: () {},
-            ),
-          );
-        },
+            );
+          },
+        ),
       );
     });
   }
 
   Widget _buildMyBookingsList(OwnerBookingsController bookingsController) {
     return Obx(() {
-      if (bookingsController.isLoading.value) {
-        return ListView.builder(
-          padding: EdgeInsets.zero,
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: 3,
-          itemBuilder: (context, index) {
-            return const Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: PropertyCardShimmer(isNormal: true),
-            );
-          },
-        );
-      }
-
+      final isLoading = bookingsController.isLoading.value;
+      final errorMessage = bookingsController.errorMessage.value;
       final list = bookingsController.bookings;
-      if (list.isEmpty) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(height: 400, child: _emptyState()),
-        );
-      }
+      return RefreshIndicator(
+        onRefresh: bookingsController.refreshBookings,
+        child: Builder(
+          builder: (context) {
+            if (isLoading) {
+              return ListView.builder(
+                padding: EdgeInsets.zero,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: 3,
+                itemBuilder: (context, index) {
+                  return const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: PropertyCardShimmer(isNormal: true),
+                  );
+                },
+              );
+            }
 
-      return ListView.builder(
-        padding: EdgeInsets.zero,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: list.length,
-        itemBuilder: (context, index) {
-          final booking = list[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: OwnerBookingCard(
-              booking: booking,
-              onViewDetails: () {
-                Get.to(
-                  () => OwnerBookingDetailsScreen(
-                    apartmentId: booking.apartmentId,
-                    bookingId: booking.id,
-                    apartment: booking.apartment,
+            if (errorMessage.isNotEmpty) {
+              return ListView(
+                padding: EdgeInsets.zero,
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: 400,
+                    child: _errorState(
+                      errorMessage,
+                      bookingsController.refreshBookings,
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            // list is already captured above
+            if (list.isEmpty) {
+              return ListView(
+                padding: EdgeInsets.zero,
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [SizedBox(height: 400, child: _emptyBookingsState())],
+              );
+            }
+
+            return ListView.builder(
+              padding: EdgeInsets.zero,
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: list.length,
+              itemBuilder: (context, index) {
+                final booking = list[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: OwnerBookingCard(
+                    booking: booking,
+                    onViewDetails: () {
+                      Get.to(
+                        () => OwnerBookingDetailsScreen(
+                          apartmentId: booking.apartmentId,
+                          bookingId: booking.id,
+                          apartment: booking.apartment,
+                        ),
+                      );
+                    },
                   ),
                 );
               },
-            ),
-          );
-        },
+            );
+          },
+        ),
       );
     });
+  }
+
+  Widget _emptyBookingsState() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: const Center(
+        child: Column(
+          children: [
+            Icon(Iconsax.ticket, size: 48, color: Color(0xFFE5E7EB)),
+            SizedBox(height: 16),
+            Text(
+              "No bookings yet",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF282828),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "Pull down to refresh.",
+              style: TextStyle(color: Color(0xFF686868)),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _errorState(String message, Future<void> Function() onRetry) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            const Icon(Iconsax.warning_2, size: 42, color: Color(0xFFEF4444)),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF282828),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 14),
+            ElevatedButton.icon(
+              onPressed: () => onRetry(),
+              icon: const Icon(Iconsax.refresh, size: 18),
+              label: Text(AppText.retry.tr),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _emptyState() {
