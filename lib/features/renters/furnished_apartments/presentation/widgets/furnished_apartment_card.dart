@@ -229,6 +229,7 @@ class FurnishedApartmentCard extends StatelessWidget {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
+                  side: BorderSide.none,
                   backgroundColor: AppColors.primaryBlue,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -247,6 +248,7 @@ class FurnishedApartmentCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onTap,
                 style: ElevatedButton.styleFrom(
+                  side: BorderSide.none,
                   backgroundColor: AppColors.typeColor,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(

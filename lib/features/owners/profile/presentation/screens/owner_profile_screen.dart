@@ -122,6 +122,7 @@ class OwnerProfileScreen extends StatelessWidget {
                             tabIndex: 0,
                           ),
                       style: ElevatedButton.styleFrom(
+                         side: BorderSide.none,
                         backgroundColor: const Color(0xFF4CAF50),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -315,6 +316,8 @@ class OwnerProfileScreen extends StatelessWidget {
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
+                            
+                            side: BorderSide.none,
                             backgroundColor: const Color(0xFF4CAF50),
                             padding: EdgeInsets.symmetric(vertical: 12.h),
                             shape: RoundedRectangleBorder(
