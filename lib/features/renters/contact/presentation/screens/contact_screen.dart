@@ -93,6 +93,7 @@ class ContactScreen extends StatelessWidget {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
+                   side: BorderSide.none,
                   backgroundColor: const Color(0xFF25D366),
                   padding: EdgeInsets.symmetric(vertical: 10.h),
                   shape: RoundedRectangleBorder(

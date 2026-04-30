@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:yannyamba/core/utils/constants/app_texts.dart';
+import 'package:yannyamba/features/owners/bookings/controllers/owner_bookings_controller.dart';
+import 'package:yannyamba/features/owners/bookings/presentation/screens/owner_booking_details_screen.dart';
+import 'package:yannyamba/features/owners/bookings/presentation/widgets/owner_booking_card.dart';
 import '../../../controllers/owner_navigation_controller.dart';
 import '../widgets/widgets.dart';
 import '../../../widgets/widgets.dart';
@@ -15,6 +18,7 @@ class OwnerPropertiesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<OwnerDashboardController>();
+    final bookingsController = Get.find<OwnerBookingsController>();
     return Column(
       children: [
         const OwnerAppBar(userName: 'James'),
@@ -62,12 +66,15 @@ class OwnerPropertiesScreen extends StatelessWidget {
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              await controller.refreshDashboard();
+              await Future.wait([
+                controller.refreshDashboard(),
+                bookingsController.refreshBookings(),
+              ]);
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: DefaultTabController(
-                length: 2,
+                length: 3,
                 child: Column(
                   children: [
                     SectionHeader(
@@ -87,6 +94,7 @@ class OwnerPropertiesScreen extends StatelessWidget {
                         tabs: [
                           Tab(text: "Furnished Apartments"),
                           Tab(text: "Normal Apartments"),
+                          Tab(text: "My Bookings"),
                         ],
                       ),
                     ),
@@ -96,6 +104,7 @@ class OwnerPropertiesScreen extends StatelessWidget {
                         children: [
                           _buildFurnishedApartmentsList(controller),
                           _buildNormalApartmentsList(controller),
+                          _buildMyBookingsList(bookingsController),
                         ],
                       ),
                     ),
@@ -221,6 +230,56 @@ class OwnerPropertiesScreen extends StatelessWidget {
                 _showDeleteDialog(property.id, property.title, controller);
               },
               onShare: () {},
+            ),
+          );
+        },
+      );
+    });
+  }
+
+  Widget _buildMyBookingsList(OwnerBookingsController bookingsController) {
+    return Obx(() {
+      if (bookingsController.isLoading.value) {
+        return ListView.builder(
+          padding: EdgeInsets.zero,
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: 3,
+          itemBuilder: (context, index) {
+            return const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: PropertyCardShimmer(isNormal: true),
+            );
+          },
+        );
+      }
+
+      final list = bookingsController.bookings;
+      if (list.isEmpty) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(height: 400, child: _emptyState()),
+        );
+      }
+
+      return ListView.builder(
+        padding: EdgeInsets.zero,
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: list.length,
+        itemBuilder: (context, index) {
+          final booking = list[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: OwnerBookingCard(
+              booking: booking,
+              onViewDetails: () {
+                Get.to(
+                  () => OwnerBookingDetailsScreen(
+                    apartmentId: booking.apartmentId,
+                    bookingId: booking.id,
+                    apartment: booking.apartment,
+                  ),
+                );
+              },
             ),
           );
         },

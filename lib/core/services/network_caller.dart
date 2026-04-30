@@ -249,7 +249,10 @@ class NetworkCaller {
     return 'Validation error';
   }
 
-  String _readMessage(dynamic decoded, {String fallback = 'Unknown error occurred'}) {
+  String _readMessage(
+    dynamic decoded, {
+    String fallback = 'Unknown error occurred',
+  }) {
     if (decoded is Map<String, dynamic>) {
       final message = decoded['message'];
       if (message is String && message.isNotEmpty) {

@@ -10,6 +10,8 @@ import 'package:yannyamba/features/common/profile/controllers/profile_controller
 import 'package:yannyamba/features/common/profile/data/services/profile_service.dart';
 import 'package:yannyamba/features/owners/dashboard/controllers/owner_dashboard_controller.dart';
 import 'package:yannyamba/features/owners/dashboard/data/services/owner_dashboard_service.dart';
+import 'package:yannyamba/features/owners/bookings/controllers/owner_bookings_controller.dart';
+import 'package:yannyamba/features/owners/bookings/data/services/owner_bookings_service.dart';
 import 'package:yannyamba/features/owners/add_property/controllers/add_property_controller.dart';
 import 'package:yannyamba/features/owners/add_property/controllers/city_selection_controller.dart';
 import 'package:yannyamba/features/owners/add_property/controllers/neighborhood_selection_controller.dart';
@@ -18,6 +20,9 @@ import 'package:yannyamba/features/owners/add_property/data/services/city_servic
 import 'package:yannyamba/features/owners/add_property/data/services/neighborhood_service.dart';
 import 'package:yannyamba/features/renters/furnished_apartments/controllers/furnished_apartment_controller.dart';
 import 'package:yannyamba/features/renters/furnished_apartments/data/services/furnished_apartment_service.dart';
+import 'package:yannyamba/features/renters/bookings/controllers/booking_controller.dart';
+import 'package:yannyamba/features/renters/bookings/controllers/my_bookings_controller.dart';
+import 'package:yannyamba/features/renters/bookings/data/services/booking_service.dart';
 
 import '../../features/renters/home/controllers/apartment_controller.dart';
 import '../../features/renters/home/controllers/apartment_filter_controller.dart';
@@ -77,6 +82,17 @@ class ControllerBinder extends Bindings {
       OwnerDashboardController(
         dashboardService: Get.find<OwnerDashboardService>(),
       ),
+    );
+
+    Get.put(OwnerBookingsService());
+    Get.put(OwnerBookingsController(service: Get.find<OwnerBookingsService>()));
+
+    // Renters Booking
+    Get.put(BookingService());
+    Get.put(BookingController(service: Get.find<BookingService>()));
+    Get.lazyPut(
+      () => MyBookingsController(service: Get.find<BookingService>()),
+      fenix: true,
     );
     Get.put(ChatController());
     Get.put(AuthenticationService());

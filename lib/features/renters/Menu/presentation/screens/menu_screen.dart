@@ -80,6 +80,12 @@ class SettingsMenu extends StatelessWidget {
                     onTap: controller.navigateToProfile,
                   ),
                   _buildDivider(),
+                  MenuItemWidget(
+                    icon: Iconsax.calendar_1,
+                    title: AppText.myBookings.tr,
+                    onTap: controller.navigateToMyBookings,
+                  ),
+                  _buildDivider(),
                   LanguageToggleWidget(
                     selectedLanguage: selectedLanguage,
                     onChange: controller.changeLanguage,

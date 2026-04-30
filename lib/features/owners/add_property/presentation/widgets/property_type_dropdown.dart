@@ -12,7 +12,10 @@ class PropertyTypeDropdown extends StatelessWidget {
     // Property categories
     final types = [
       _PropertyTypeOption(value: 'Home', label: AppText.homeTypeProperty.tr),
-      _PropertyTypeOption(value: 'Office', label: AppText.officeTypeProperty.tr),
+      _PropertyTypeOption(
+        value: 'Office',
+        label: AppText.officeTypeProperty.tr,
+      ),
     ];
 
     return Obx(() {

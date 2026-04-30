@@ -10,7 +10,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await StorageService.init();
-  // await dotenv.load(fileName: ".env");
+  await dotenv.load(fileName: ".env");
 
   runApp(const MyApp());
 }

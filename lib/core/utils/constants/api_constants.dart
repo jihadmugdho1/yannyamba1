@@ -2,7 +2,7 @@ class ApiConstants {
   // static const String baseUrl =
   // "https://room-rent-service-backend-production.up.railway.app/api";
 
-  static const String baseUrl = "http://46.224.80.189:4000/api";
+  static const String baseUrl = "http://46.224.80.189:5000/api";
 
   //Auth Endpoints
   static const String login = "$baseUrl/auth/login";
@@ -45,6 +45,16 @@ class ApiConstants {
 
   static const String incrementQueryCount =
       "$baseUrl/product/add-query-product/{apartmentId}";
+
+  //Booking Endpoints
+  static const String getOwnerBookings = "$baseUrl/booking/owner-bookings";
+  static const String getApartmentBookings =
+      "$baseUrl/booking/apartment/{apartmentId}";
+  static const String createBooking = "$baseUrl/booking";
+  static String getUserBookingsByPhone(String phone) =>
+      "$baseUrl/booking/user-bookings/${Uri.encodeComponent(phone)}";
+  static String getBookingDetailsByTicket(String ticketId) =>
+      "$baseUrl/booking/owner-booking/${Uri.encodeComponent(ticketId)}";
 
   //Favorites Endpoints
   static const String addToFavorites =
