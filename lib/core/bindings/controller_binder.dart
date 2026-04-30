@@ -21,6 +21,7 @@ import 'package:yannyamba/features/owners/add_property/data/services/neighborhoo
 import 'package:yannyamba/features/renters/furnished_apartments/controllers/furnished_apartment_controller.dart';
 import 'package:yannyamba/features/renters/furnished_apartments/data/services/furnished_apartment_service.dart';
 import 'package:yannyamba/features/renters/bookings/controllers/booking_controller.dart';
+import 'package:yannyamba/features/renters/bookings/controllers/my_bookings_controller.dart';
 import 'package:yannyamba/features/renters/bookings/data/services/booking_service.dart';
 
 import '../../features/renters/home/controllers/apartment_controller.dart';
@@ -89,6 +90,10 @@ class ControllerBinder extends Bindings {
     // Renters Booking
     Get.put(BookingService());
     Get.put(BookingController(service: Get.find<BookingService>()));
+    Get.lazyPut(
+      () => MyBookingsController(service: Get.find<BookingService>()),
+      fenix: true,
+    );
     Get.put(ChatController());
     Get.put(AuthenticationService());
     Get.put(FavoritesService());

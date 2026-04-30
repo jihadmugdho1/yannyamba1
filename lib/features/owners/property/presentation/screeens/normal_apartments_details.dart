@@ -67,15 +67,13 @@ class NormalApartmentsDetails extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: SizedBox(
-        
               child: ElevatedButton(
-                
                 onPressed: () => showBookingDialog(
                   context: context,
                   apartmentId: apartment.id,
                 ),
                 style: ElevatedButton.styleFrom(
-                   backgroundColor: AppColors.primaryBlue,
+                  backgroundColor: AppColors.primaryBlue,
                   side: BorderSide.none,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

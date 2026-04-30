@@ -12,6 +12,8 @@ class AppText {
   static const String settings = 'settings';
   static const String switchToOwnersDashboard = 'switch_to_owners_dashboard';
   static const String profile = 'profile';
+  static const String myBookings = 'my_bookings';
+  static const String bookingDetails = 'booking_details';
   static const String language = 'language';
   static const String notificationSettings = 'notification_settings';
   static const String contactUs = 'contact_us';

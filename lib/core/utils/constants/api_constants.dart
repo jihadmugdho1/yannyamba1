@@ -51,6 +51,10 @@ class ApiConstants {
   static const String getApartmentBookings =
       "$baseUrl/booking/apartment/{apartmentId}";
   static const String createBooking = "$baseUrl/booking";
+  static String getUserBookingsByPhone(String phone) =>
+      "$baseUrl/booking/user-bookings/${Uri.encodeComponent(phone)}";
+  static String getBookingDetailsByTicket(String ticketId) =>
+      "$baseUrl/booking/owner-booking/${Uri.encodeComponent(ticketId)}";
 
   //Favorites Endpoints
   static const String addToFavorites =

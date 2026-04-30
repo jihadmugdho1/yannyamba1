@@ -15,6 +15,8 @@ class AppLocalizations extends Translations {
       AppText.settings: 'Settings',
       AppText.switchToOwnersDashboard: 'Switch to Owners dashboard',
       AppText.profile: 'Profile',
+      AppText.myBookings: 'My Bookings',
+      AppText.bookingDetails: 'Booking Details',
       AppText.language: 'Language',
       AppText.notificationSettings: 'Notification Settings',
       AppText.contactUs: 'Contact us',
@@ -452,6 +454,8 @@ class AppLocalizations extends Translations {
       AppText.switchToOwnersDashboard:
           'Passer au tableau de bord des propriétaires',
       AppText.profile: 'Profil',
+      AppText.myBookings: 'Mes réservations',
+      AppText.bookingDetails: 'Détails de réservation',
       AppText.language: 'Langue',
       AppText.notificationSettings: 'Paramètres de notification',
       AppText.contactUs: 'Contactez-nous',

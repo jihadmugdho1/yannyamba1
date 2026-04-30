@@ -76,5 +76,4 @@ class OwnerContactService {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
-
 }

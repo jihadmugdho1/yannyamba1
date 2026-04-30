@@ -38,6 +38,9 @@ class BookingApartmentSummary {
   final String cityName;
   final String neighborhood;
   final num? dailyRate;
+  final num? monthlyRent;
+  final String ownerName;
+  final String ownerPhone;
   final List<BookingApartmentImage> images;
 
   const BookingApartmentSummary({
@@ -47,6 +50,9 @@ class BookingApartmentSummary {
     required this.cityName,
     required this.neighborhood,
     required this.dailyRate,
+    required this.monthlyRent,
+    required this.ownerName,
+    required this.ownerPhone,
     required this.images,
   });
 
@@ -74,6 +80,11 @@ class BookingApartmentSummary {
       cityName: (json['city_name'] ?? '').toString(),
       neighborhood: (json['neighborhood'] ?? '').toString(),
       dailyRate: json['daily_rate'] is num ? (json['daily_rate'] as num) : null,
+      monthlyRent: json['monthly_rent'] is num
+          ? (json['monthly_rent'] as num)
+          : null,
+      ownerName: (json['owner_name'] ?? '').toString(),
+      ownerPhone: (json['owner_phone'] ?? '').toString(),
       images: images,
     );
   }

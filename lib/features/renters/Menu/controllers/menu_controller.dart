@@ -9,6 +9,7 @@ import 'package:yannyamba/features/renters/authentication/controllers/authentica
 import 'package:yannyamba/features/renters/authentication/presentation/screens/login_screen.dart';
 import 'package:yannyamba/features/renters/contact/presentation/screens/contact_screen.dart';
 import 'package:yannyamba/features/renters/notification/presentation/screens/notification_screen.dart';
+import 'package:yannyamba/features/renters/bookings/presentation/screens/my_bookings_screen.dart';
 
 import '../presentation/screens/faq_page.dart';
 
@@ -75,6 +76,16 @@ class MenuScreenController extends GetxController {
 
   void navigateToProfile() {
     navigationController.changeTab(3);
+  }
+
+  void navigateToMyBookings() {
+    final isLoggedIn = authenticationController.isLoggedIn.value;
+    if (!isLoggedIn) {
+      Get.to(() => const AuthenticationLoginScreen());
+      return;
+    }
+
+    Get.to(() => MyBookingsScreen());
   }
 
   void navigateToNotifications() {

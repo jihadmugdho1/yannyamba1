@@ -42,7 +42,6 @@ class _FurnishedApartmentDetailsState extends State<FurnishedApartmentDetails> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     // Update apartment when controller changes
@@ -102,7 +101,6 @@ class _FurnishedApartmentDetailsState extends State<FurnishedApartmentDetails> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: SizedBox(
-        
             child: ElevatedButton(
               onPressed: () => showBookingDialog(
                 context: context,

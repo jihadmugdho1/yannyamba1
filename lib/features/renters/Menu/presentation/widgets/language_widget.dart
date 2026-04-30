@@ -46,7 +46,6 @@ class LanguageToggleWidget extends StatelessWidget {
     );
   }
 
-
   Widget _languageOption(String lang) {
     final bool isSelected = selectedLanguage == lang;
 

@@ -48,4 +48,71 @@ class BookingService {
 
     return <String, dynamic>{'data': data};
   }
+
+  Future<List<Map<String, dynamic>>> fetchUserBookings({
+    required String phone,
+  }) async {
+    final token = await StorageService.getToken();
+    if (token == null) {
+      throw Exception('Please login first');
+    }
+
+    final response = await _networkCaller.getRequest(
+      ApiConstants.getUserBookingsByPhone(phone),
+      headers: {'Authorization': token},
+    );
+
+    if (!response.isSuccess) {
+      throw Exception(
+        response.errorMessage.isNotEmpty
+            ? response.errorMessage
+            : 'Failed to fetch bookings',
+      );
+    }
+
+    final decoded = response.responseData;
+    if (decoded is Map<String, dynamic>) {
+      final data = decoded['data'];
+      if (data is List) {
+        return data
+            .whereType<Map>()
+            .map((e) => e.cast<String, dynamic>())
+            .toList();
+      }
+    }
+
+    return <Map<String, dynamic>>[];
+  }
+
+  Future<Map<String, dynamic>> fetchBookingDetails({
+    required String ticketId,
+  }) async {
+    final token = await StorageService.getToken();
+    if (token == null) {
+      throw Exception('Please login first');
+    }
+
+    final response = await _networkCaller.getRequest(
+      ApiConstants.getBookingDetailsByTicket(ticketId),
+      headers: {'Authorization': token},
+    );
+
+    if (!response.isSuccess) {
+      throw Exception(
+        response.errorMessage.isNotEmpty
+            ? response.errorMessage
+            : 'Failed to fetch booking details',
+      );
+    }
+
+    final decoded = response.responseData;
+    if (decoded is Map<String, dynamic>) {
+      final data = decoded['data'];
+      if (data is Map) {
+        return data.cast<String, dynamic>();
+      }
+    }
+
+    return <String, dynamic>{};
+  }
 }
