@@ -2,7 +2,7 @@ class ApiConstants {
   // static const String baseUrl =
   // "https://room-rent-service-backend-production.up.railway.app/api";
 
-  static const String baseUrl = "http://46.224.80.189:5000/api";
+  static const String baseUrl = "https://yannyamba-backend-yd44.onrender.com/api";
 
   //Auth Endpoints
   static const String login = "$baseUrl/auth/login";

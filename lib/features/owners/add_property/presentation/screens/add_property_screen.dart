@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:yannyamba/core/utils/constants/app_texts.dart';
 import '../../controllers/add_property_controller.dart';
 import '../../controllers/features_amenities_controller.dart';
-import 'steps/step0_listing_type.dart';
 import 'steps/step1_basic_info.dart';
 import 'steps/step2_pricing_terms.dart';
 import 'steps/step3_location_details.dart';
@@ -55,7 +54,7 @@ class AddPropertyScreen extends StatelessWidget {
 
   Widget _buildProgressBar(AddPropertyController controller) {
     return Obx(() {
-      final progress = (controller.currentStep.value + 1) / 7;
+      final progress = (controller.currentStep.value + 1) / 6;
 
       return Container(
         color: Colors.white,
@@ -67,7 +66,7 @@ class AddPropertyScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${AppText.step.tr} ${controller.currentStep.value + 1} ${AppText.of.tr} 7',
+                  '${AppText.step.tr} ${controller.currentStep.value + 1} ${AppText.of.tr} 6',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -109,22 +108,20 @@ class AddPropertyScreen extends StatelessWidget {
   String _getStepTitle(int step, String listingType) {
     switch (step) {
       case 0:
-        return AppText.listingType.tr;
-      case 1:
         return AppText.basicInformation.tr;
-      case 2:
+      case 1:
         return listingType == 'furnished'
             ? AppText.pricingAndBooking.tr
             : AppText.pricingAndTerms.tr;
-      case 3:
+      case 2:
         return AppText.locationDetails.tr;
-      case 4:
+      case 3:
         return listingType == 'furnished'
             ? AppText.amenitiesAndRules.tr
             : AppText.featuresAndAmenities.tr;
-      case 5:
+      case 4:
         return AppText.propertyPhotos.tr;
-      case 6:
+      case 5:
         return AppText.ownerDetails.tr;
       default:
         return '';
@@ -134,21 +131,19 @@ class AddPropertyScreen extends StatelessWidget {
   Widget _getStepWidget(int step) {
     switch (step) {
       case 0:
-        return const Step0ListingType();
-      case 1:
         return const Step1BasicInfo();
-      case 2:
+      case 1:
         return const Step2PricingTerms();
-      case 3:
+      case 2:
         return const Step3LocationDetails();
-      case 4:
+      case 3:
         return const Step4FeaturesAmenities();
-      case 5:
+      case 4:
         return const Step5PropertyPhotos();
-      case 6:
+      case 5:
         return const Step6OwnerDetails();
       default:
-        return const Step0ListingType();
+        return const Step1BasicInfo();
     }
   }
 }

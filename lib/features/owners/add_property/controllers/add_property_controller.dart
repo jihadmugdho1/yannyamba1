@@ -11,6 +11,7 @@ import 'package:yannyamba/core/models/property/property_models.dart';
 import 'package:yannyamba/features/owners/add_property/data/models/reference_model.dart';
 import 'package:yannyamba/features/renters/home/controllers/apartment_controller.dart';
 import 'package:yannyamba/features/renters/furnished_apartments/controllers/furnished_apartment_controller.dart';
+import 'package:yannyamba/core/utils/logging/logger.dart';
 
 class AddPropertyController extends GetxController {
   final AddPropertyService _propertyService = AddPropertyService();
@@ -21,7 +22,8 @@ class AddPropertyController extends GetxController {
 
   final currentStep = 0.obs;
 
-  final listingType = 'normal'.obs;
+  // Auto-computed: 'furnished' = short term (min ≤ 15), 'normal' = long term (min ≥ 16)
+  final listingType = 'furnished'.obs;
 
   final propertyType = ''.obs;
   final bedrooms = 1.obs;
@@ -43,7 +45,7 @@ class AddPropertyController extends GetxController {
   final dailyRate = ''.obs;
   final dailyRateController = TextEditingController();
   final minimumStay = 1.obs;
-  final maximumStay = 30.obs;
+  final maximumStay = 15.obs;
   final checkInTime = '14:00'.obs;
   final checkOutTime = '11:00'.obs;
 
@@ -98,6 +100,11 @@ class AddPropertyController extends GetxController {
       CountryCode(dialCode: '+237', code: 'CM', name: 'Cameroon'),
     );
 
+    // Auto-detect short/long term from minimum stay days
+    ever(minimumStay, (val) {
+      listingType.value = val <= 15 ? 'furnished' : 'normal';
+    });
+
     aboutRentalController.addListener(() {
       aboutRental.value = aboutRentalController.text;
     });
@@ -140,7 +147,7 @@ class AddPropertyController extends GetxController {
   }
 
   void nextStep() {
-    if (currentStep.value < 6) {
+    if (currentStep.value < 5) {
       currentStep.value++;
     }
   }
@@ -152,7 +159,7 @@ class AddPropertyController extends GetxController {
   }
 
   void goToStep(int step) {
-    if (step >= 0 && step <= 6) {
+    if (step >= 0 && step <= 5) {
       currentStep.value = step;
     }
   }
@@ -182,11 +189,7 @@ class AddPropertyController extends GetxController {
   }
 
   bool validateStep2() {
-    if (listingType.value == 'furnished') {
-      isStep2Valid.value = dailyRate.value.isNotEmpty;
-    } else {
-      isStep2Valid.value = monthlyRent.value.isNotEmpty;
-    }
+    isStep2Valid.value = dailyRate.value.isNotEmpty;
     return isStep2Valid.value;
   }
 
@@ -335,7 +338,7 @@ class AddPropertyController extends GetxController {
   /// Reset all data
   void reset() {
     currentStep.value = 0;
-    listingType.value = 'normal';
+    listingType.value = 'furnished';
     propertyType.value = '';
     bedrooms.value = 1;
     bathrooms.value = 1;
@@ -354,7 +357,7 @@ class AddPropertyController extends GetxController {
     dailyRate.value = '';
     dailyRateController.clear();
     minimumStay.value = 1;
-    maximumStay.value = 30;
+    maximumStay.value = 15;
     checkInTime.value = '14:00';
     checkOutTime.value = '11:00';
     cityName.value = '';
@@ -396,10 +399,26 @@ class AddPropertyController extends GetxController {
     );
   }
 
+  void _showErrorSnackbar(ScaffoldMessengerState messenger, String message) {
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFFEF4444),
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
   /// Submit property with real-time dashboard update
   Future<void> submitProperty(BuildContext context) async {
+    // Capture messenger and lottie context before any async gap
+    final messenger = ScaffoldMessenger.of(context);
+
     if (!validateStep6()) {
-      Get.snackbar('Error', 'Please fill all required fields');
+      _showErrorSnackbar(messenger, 'Please fill all required fields');
       return;
     }
 
@@ -408,79 +427,41 @@ class AddPropertyController extends GetxController {
     uploadProgress.value = 0.0;
 
     try {
-      final result;
+      final isLongTerm = minimumStay.value >= 16;
 
-      // Check listing type and call appropriate service method
-      if (listingType.value == 'furnished') {
-        // For furnished apartments - use dedicated method
-        result = await _propertyService.publishFurnishedApartment(
-          propertyType: propertyType.value,
-          bedrooms: propertyType.value == 'Office'
-              ? officeRooms.value
-              : bedrooms.value,
-          bathrooms: propertyType.value == 'Office'
-              ? conferenceRooms.value
-              : bathrooms.value,
-          propertySize: propertySize.value,
-          aboutRental: aboutRental.value,
-          dailyRate: dailyRate.value,
-          minimumStay: minimumStay.value,
-          maximumStay: maximumStay.value,
-          checkInTime: checkInTime.value,
-          checkOutTime: checkOutTime.value,
-          cityName: cityName.value,
-          neighbourhood: neighbourhood.value,
-          distanceToDowntown: distanceToDowntown.value.isEmpty
-              ? null
-              : distanceToDowntown.value,
-          nearbyLandmarks: nearbyLandmarks.value.isEmpty
-              ? null
-              : nearbyLandmarks.value,
-          selectedFurnishings: selectedFurnishings.toList(),
-          selectedHouseRules: selectedHouseRules.toList(),
-          photoLocalPaths: propertyPhotos.toList(),
-          ownerName: ownerName.value,
-          ownerNumber: ownerNumber.value,
-          references: references.toList(),
-          workstations: propertyType.value == 'Office'
-              ? workstations.value
-              : null,
-        );
-      } else {
-        // For normal apartments - use original method
-        result = await _propertyService.publishProperty(
-          propertyType: propertyType.value,
-          bedrooms: propertyType.value == 'Office'
-              ? officeRooms.value
-              : bedrooms.value,
-          bathrooms: propertyType.value == 'Office'
-              ? conferenceRooms.value
-              : bathrooms.value,
-          propertySize: propertySize.value,
-          aboutRental: aboutRental.value,
-          isLeaseTakeover: isLeaseTakeover.value,
-          monthlyRent: monthlyRent.value,
-          advanceMonths: advanceMonths.value,
-          securityMonths: securityMonths.value,
-          cityName: cityName.value,
-          neighbourhood: neighbourhood.value,
-          distanceToDowntown: distanceToDowntown.value.isEmpty
-              ? null
-              : distanceToDowntown.value,
-          nearbyLandmarks: nearbyLandmarks.value.isEmpty
-              ? null
-              : nearbyLandmarks.value,
-          selectedFeatures: selectedFeatures.toList(),
-          selectedAmenities: selectedAmenities.toList(),
-          photoLocalPaths: propertyPhotos.toList(),
-          ownerName: ownerName.value,
-          ownerNumber: ownerNumber.value,
-          references: references.toList(),
-          workstations: propertyType.value == 'Office'
-              ? workstations.value
-              : null,
-        );
-      }
+      final result = await _propertyService.publishProperty(
+        propertyType: propertyType.value,
+        bedrooms: propertyType.value == 'Office'
+            ? officeRooms.value
+            : bedrooms.value,
+        bathrooms: propertyType.value == 'Office'
+            ? conferenceRooms.value
+            : bathrooms.value,
+        propertySize: propertySize.value,
+        aboutRental: aboutRental.value,
+        dailyRate: dailyRate.value,
+        minimumStay: minimumStay.value,
+        maximumStay: maximumStay.value,
+        cityName: cityName.value,
+        neighbourhood: neighbourhood.value,
+        distanceToDowntown: distanceToDowntown.value.isEmpty
+            ? null
+            : distanceToDowntown.value,
+        nearbyLandmarks: nearbyLandmarks.value.isEmpty
+            ? null
+            : nearbyLandmarks.value,
+        selectedFeatures: selectedFeatures.toList(),
+        selectedAmenities: selectedAmenities.toList(),
+        selectedHouseRules: selectedHouseRules.toList(),
+        selectedWhatsIncluded: selectedFurnishings.toList(),
+        photoLocalPaths: propertyPhotos.toList(),
+        ownerName: ownerName.value,
+        ownerNumber: ownerNumber.value,
+        references: references.toList(),
+        workstations: propertyType.value == 'Office' ? workstations.value : null,
+        advanceMonths: isLongTerm ? advanceMonths.value : null,
+        securityMonths: isLongTerm ? securityMonths.value : null,
+      );
 
       uploadStatus.value = 'Creating property listing...';
       uploadProgress.value = 1.0;
@@ -530,31 +511,19 @@ class AddPropertyController extends GetxController {
             navController.goToDashboard();
           });
         } catch (conversionError) {
-          Get.snackbar(
-            'Error',
+          _showErrorSnackbar(
+            messenger,
             'Property saved but display error: $conversionError',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFEF4444),
-            colorText: Colors.white,
           );
         }
       } else {
-        Get.snackbar(
-          'Error',
-          result.error ?? 'Failed to publish property',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFFEF4444),
-          colorText: Colors.white,
-        );
+        final errorMsg = result.error ?? 'Failed to publish property';
+        AppLoggerHelper.error('Publish property failed', errorMsg);
+        _showErrorSnackbar(messenger, errorMsg);
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'An unexpected error occurred: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFEF4444),
-        colorText: Colors.white,
-      );
+      AppLoggerHelper.error('Publish property exception', e);
+      _showErrorSnackbar(messenger, 'An unexpected error occurred: $e');
     } finally {
       isSubmitting.value = false;
       uploadStatus.value = '';
@@ -578,7 +547,7 @@ class AddPropertyController extends GetxController {
     final actualDistance = (location['distanceToDowntown'] as num?)?.toDouble();
     final distanceToDowntown = actualDistance ?? 0.0;
 
-    // Check if this is a furnished apartment
+    // Short term = furnished, long term = normal
     final isFurnished = data['listingType'] == 'furnished';
 
     // Create address object
@@ -618,84 +587,31 @@ class AddPropertyController extends GetxController {
       }
     }
 
-    // Create property details based on listing type
-    final propertyDetails = isFurnished
-        ? PropertyDetails(
-            propertyType: data['propertyType'] as String,
-            squareFeet: squareFeet,
-            advanceMonths:
-                (data['minimumStay'] as int?) ?? 1, // Min stay for furnished
-            depositMonths:
-                (data['maximumStay'] as int?) ?? 30, // Max stay for furnished
-            distanceToDowntown: distanceToDowntown,
-          )
-        : PropertyDetails(
-            propertyType: data['propertyType'] as String,
-            squareFeet: squareFeet,
-            advanceMonths: (data['advanceMonths'] as int?) ?? 1,
-            depositMonths: (data['securityMonths'] as int?) ?? 1,
-            distanceToDowntown: distanceToDowntown,
-          );
+    final propertyDetails = PropertyDetails(
+      propertyType: data['propertyType'] as String,
+      squareFeet: squareFeet,
+      advanceMonths: (data['advanceMonths'] as int?) ?? 0,
+      depositMonths: (data['securityMonths'] as int?) ?? 0,
+      distanceToDowntown: distanceToDowntown,
+    );
 
-    // Create details string based on listing type
-    final detailsString = isFurnished
-        ? '''
+    final stayLabel = isFurnished ? 'Short-term' : 'Long-term';
+    final detailsString = '''
 ${data['aboutRental'] ?? ''}
 
-Furnished Apartment (Short-term Rental)
+$stayLabel Rental
 Daily Rate: ₣ ${data['dailyRate'] ?? 0}/night
-Minimum Stay: ${data['minimumStay'] ?? 1} nights
-Maximum Stay: ${data['maximumStay'] ?? 30} nights
-Check-in: ${data['checkInTime'] ?? 'N/A'}
-Check-out: ${data['checkOutTime'] ?? 'N/A'}
+Min Stay: ${data['minimumStay'] ?? 1} days | Max Stay: ${data['maximumStay'] ?? 15} days
+${!isFurnished ? 'Advance: ${data['advanceMonths'] ?? 0} month(s) | Security: ${data['securityMonths'] ?? 0} month(s)' : ''}
+${isOffice && data['workstations'] != null ? '💼 Workstations: ${data['workstations']}' : ''}
 📍 Location: ${location['neighbourhood']}, ${location['cityName']}
-${distanceToDowntown > 0 ? '📍 Distance: $distanceToDowntown miles to downtown' : ''}
-${location['nearbyLandmarks'] != null ? '📍 Nearby: ${location['nearbyLandmarks']}' : ''}
-
-🛋️ Furnishings: ${((data['furnishings'] as List?) ?? []).join(', ')}
-📜 House Rules: ${((data['houseRules'] as List?) ?? []).join(', ')}
-'''
-        : isOffice
-        ? '''
-${data['aboutRental'] ?? ''}
-
-🏢 Office Space (Commercial Property)
-Monthly Rent: \$${data['monthlyRent'] ?? 0}
-Advance: \$${data['advanceAmount'] ?? 0} (${data['advanceMonths'] ?? 0} months)
-Security Deposit: \$${data['securityDeposit'] ?? 0} (${data['securityMonths'] ?? 0} months)
-${data['workstations'] != null ? '💼 Workstations: ${data['workstations']}' : ''}
-
-📍 Location: ${location['neighbourhood']}, ${location['cityName']}
-${distanceToDowntown > 0 ? '📍 Distance: $distanceToDowntown miles to downtown' : ''}
-${location['nearbyLandmarks'] != null ? '📍 Nearby: ${location['nearbyLandmarks']}' : ''}
-'''
-        : '''
-${data['aboutRental'] ?? ''}
-
-🏢 Normal Apartment (Long-term Rental)
-Monthly Rent: \$${data['monthlyRent'] ?? 0}
-Advance: \$${data['advanceAmount'] ?? 0} (${data['advanceMonths'] ?? 0} months)
-Security Deposit: \$${data['securityDeposit'] ?? 0} (${data['securityMonths'] ?? 0} months)
-${(data['isLeaseTakeover'] ?? false) ? '🔄 Lease Takeover Available' : ''}
-
-📍 Location: ${location['neighbourhood']}, ${location['cityName']}
-${distanceToDowntown > 0 ? '📍 Distance: $distanceToDowntown miles to downtown' : ''}
+${distanceToDowntown > 0 ? '📍 Distance: $distanceToDowntown miles to main road' : ''}
 ${location['nearbyLandmarks'] != null ? '📍 Nearby: ${location['nearbyLandmarks']}' : ''}
 ''';
 
-    // Get features and amenities based on type
-    final features = isFurnished
-        ? (data['furnishings'] as List).cast<String>()
-        : (data['features'] as List).cast<String>();
-
-    final amenities = isFurnished
-        ? (data['houseRules'] as List).cast<String>()
-        : (data['amenities'] as List).cast<String>();
-
-    // Calculate rent display (daily rate for furnished, monthly for normal)
-    final rentDisplay = isFurnished
-        ? data['dailyRate'] as double
-        : data['monthlyRent'] as double;
+    final features = (data['features'] as List?)?.cast<String>() ?? [];
+    final amenities = (data['amenities'] as List?)?.cast<String>() ?? [];
+    final rentDisplay = (data['dailyRate'] as num?)?.toDouble() ?? 0.0;
 
     // Title with property type indicator
     final title = isFurnished
@@ -710,9 +626,7 @@ ${location['nearbyLandmarks'] != null ? '📍 Nearby: ${location['nearbyLandmark
       address: address,
       type: data['propertyType'] as String,
       rent: rentDisplay,
-      advancePayment: isFurnished
-          ? 0.0
-          : (data['advanceAmount'] as double? ?? 0.0),
+      advancePayment: (data['advanceAmount'] as num?)?.toDouble() ?? 0.0,
       size: squareFeet,
       rooms: bedrooms,
       washrooms: data['bathrooms'] as int,

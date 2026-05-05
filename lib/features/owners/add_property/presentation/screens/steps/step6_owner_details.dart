@@ -132,6 +132,7 @@ class Step6OwnerDetails extends StatelessWidget {
                             }
                           },
                     style: ElevatedButton.styleFrom(
+                      side: BorderSide.none,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: const Color(0xFF10B981),
                       shape: RoundedRectangleBorder(
@@ -292,6 +293,7 @@ class Step6OwnerDetails extends StatelessWidget {
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
+                    side: BorderSide.none,
                     backgroundColor: const Color(0xFF10B981),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
