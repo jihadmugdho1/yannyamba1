@@ -2,7 +2,8 @@ class ApiConstants {
   // static const String baseUrl =
   // "https://room-rent-service-backend-production.up.railway.app/api";
 
-  static const String baseUrl = "https://yannyamba-backend-yd44.onrender.com/api";
+  static const String baseUrl =
+      "https://yannyamba-backend-yd44.onrender.com/api";
 
   //Auth Endpoints
   static const String login = "$baseUrl/auth/login";
@@ -19,6 +20,8 @@ class ApiConstants {
   static const String updateProfile = "$baseUrl/user/update-profile";
 
   //Apartments Endpoints
+  static const String getAllProducts = "$baseUrl/product/get-all";
+
   static const String getFurnishedApartments =
       "$baseUrl/product/get-all?listing_type=Furnished Apartment";
 
@@ -29,6 +32,9 @@ class ApiConstants {
   static const String postProperty = "$baseUrl/product";
 
   //Owner Dashboard Endpoints
+  static const String getOwnerMyselfProducts =
+      "$baseUrl/product/get-myself-product";
+
   static const String getOwnerNormalProperties =
       "$baseUrl/product/get-myself-product?listing_type=Normal Apartment";
   static const String getOwnerFurnishedProperties =

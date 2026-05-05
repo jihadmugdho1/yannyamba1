@@ -6,12 +6,14 @@ class SectionHeader extends StatelessWidget {
   final String title;
   final String? actionText;
   final VoidCallback? onActionTap;
+  final VoidCallback? onFilterTap;
 
   const SectionHeader({
     super.key,
     required this.title,
     this.actionText,
     this.onActionTap,
+    this.onFilterTap,
   });
 
   @override
@@ -28,18 +30,27 @@ class SectionHeader extends StatelessWidget {
             color: Color(0xFF211F1F),
           ),
         ),
-        if (actionText != null)
-          GestureDetector(
-            onTap: onActionTap,
-            child: Text(
-              actionText!,
-              style: getTextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF211F1F),
+        Row(
+          children: [
+            if (onFilterTap != null)
+              IconButton(
+                onPressed: onFilterTap,
+                icon: const Icon(Icons.filter_list, size: 20),
               ),
-            ),
-          ),
+            if (actionText != null)
+              GestureDetector(
+                onTap: onActionTap,
+                child: Text(
+                  actionText!,
+                  style: getTextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF211F1F),
+                  ),
+                ),
+              ),
+          ],
+        )
       ],
     );
   }

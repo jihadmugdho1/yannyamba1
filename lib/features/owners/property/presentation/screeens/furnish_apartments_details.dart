@@ -16,8 +16,13 @@ import '../../../../renters/furnished_apartments/presentation/widgets/furnished_
 
 class FurnishedApartmentDetails extends StatefulWidget {
   final String apartmentId;
+  final FurnishedApartment? apartment;
 
-  const FurnishedApartmentDetails({super.key, required this.apartmentId});
+  const FurnishedApartmentDetails({
+    super.key,
+    required this.apartmentId,
+    this.apartment,
+  });
 
   @override
   State<FurnishedApartmentDetails> createState() =>
@@ -37,6 +42,35 @@ class _FurnishedApartmentDetailsState extends State<FurnishedApartmentDetails> {
   }
 
   void _updateCurrentApartment() {
+    if (widget.apartment != null) {
+      _currentApartment = widget.apartment;
+      return;
+    }
+
+    final fromAll = controller.allProducts.firstWhereOrNull(
+      (apt) => apt.id == widget.apartmentId,
+    );
+    if (fromAll is FurnishedApartment) {
+      _currentApartment = fromAll;
+      return;
+    }
+
+    final fromOffice = controller.officeProducts.firstWhereOrNull(
+      (apt) => apt.id == widget.apartmentId,
+    );
+    if (fromOffice is FurnishedApartment) {
+      _currentApartment = fromOffice;
+      return;
+    }
+
+    final fromHome = controller.homeProducts.firstWhereOrNull(
+      (apt) => apt.id == widget.apartmentId,
+    );
+    if (fromHome is FurnishedApartment) {
+      _currentApartment = fromHome;
+      return;
+    }
+
     _currentApartment = controller.furnishedApartments.firstWhereOrNull(
       (apt) => apt.id == widget.apartmentId,
     );

@@ -9,11 +9,20 @@ class FurnishedApartmentService {
     : _networkCaller = networkCaller ?? NetworkCaller();
 
   /// Fetch all furnished apartments from API
-  Future<List<FurnishedApartment>> fetchFurnishedApartments() async {
+  ///
+  /// NOTE: Backend `GET /product/get-all` returns all products by default.
+  /// If you pass [listingType], it will request a filtered result from API.
+  Future<List<FurnishedApartment>> fetchFurnishedApartments({
+    String? listingType,
+  }) async {
     try {
       AppLoggerHelper.debug('Fetching furnished apartments...');
       final response = await _networkCaller.getRequest(
-        ApiConstants.getFurnishedApartments,
+        ApiConstants.getAllProducts,
+        queryParams: {
+          if (listingType != null && listingType.trim().isNotEmpty)
+            'listing_type': listingType.trim(),
+        },
       );
 
       AppLoggerHelper.debug('Response isSuccess: ${response.isSuccess}');

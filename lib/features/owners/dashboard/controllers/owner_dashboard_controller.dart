@@ -15,10 +15,27 @@ class OwnerDashboardController extends GetxController {
   final properties = <OwnerProperty>[].obs;
   final normalApartments = <Apartment>[].obs;
   final furnishedApartments = <FurnishedApartment>[].obs;
+  final allProducts = <Apartment>[].obs;
+  final homeProducts = <Apartment>[].obs;
+  final officeProducts = <Apartment>[].obs;
 
   final isDashboardLoading = false.obs;
   final isRefreshing = false.obs;
   final errorMessage = ''.obs;
+
+  // Filter state
+  final selectedCategory = RxnString();
+  final selectedCity = RxnString();
+  final minBedrooms = Rxn<int>();
+  final minBathrooms = Rxn<int>();
+  final minPrice = RxnDouble();
+  final maxPrice = RxnDouble();
+  final rentalFilter = RxnString();
+  final advancePayment = RxnString();
+  final securityDeposit = RxnString();
+  final neighborhood = RxnString();
+  final page = RxnInt();
+  final limit = RxnInt();
 
   @override
   void onInit() {
@@ -32,11 +49,68 @@ class OwnerDashboardController extends GetxController {
       await Future.wait([
         fetchDashboardStats(),
         fetchProperties(),
-        fetchApartments(),
-        fetchFurnishedApartments(),
+        fetchAllProducts(),
       ]);
     } finally {
       isDashboardLoading.value = false;
+    }
+  }
+
+  Future<void> fetchAllProducts() async {
+    try {
+      final data = await _dashboardService.fetchAllProducts(
+        type: selectedCategory.value,
+        rentalFilter: rentalFilter.value,
+        minRent: minPrice.value,
+        maxRent: maxPrice.value,
+        bedrooms: minBedrooms.value,
+        bathrooms: minBathrooms.value,
+        advancePayment: advancePayment.value,
+        securityDeposit: securityDeposit.value,
+        city: selectedCity.value,
+        neighborhood: neighborhood.value,
+        page: page.value,
+        limit: limit.value,
+      );
+
+      allProducts.value = data;
+      AppLoggerHelper.debug('Fetched ${allProducts.length} total products');
+    } catch (e) {
+      errorMessage.value = e.toString();
+      allProducts.value = [];
+    }
+  }
+
+  Future<void> refreshMyProperties() async {
+    isDashboardLoading.value = true;
+    try {
+      await Future.wait([fetchHomeProducts(), fetchOfficeProducts()]);
+    } finally {
+      isDashboardLoading.value = false;
+    }
+  }
+
+  Future<void> fetchHomeProducts() async {
+    try {
+      final data = await _dashboardService.fetchMyselfProducts(
+        propertyCategory: 'Home',
+      );
+      homeProducts.value = data;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      homeProducts.value = [];
+    }
+  }
+
+  Future<void> fetchOfficeProducts() async {
+    try {
+      final data = await _dashboardService.fetchMyselfProducts(
+        propertyCategory: 'Office',
+      );
+      officeProducts.value = data;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      officeProducts.value = [];
     }
   }
 
@@ -61,7 +135,20 @@ class OwnerDashboardController extends GetxController {
 
   Future<void> fetchApartments() async {
     try {
-      final data = await _dashboardService.fetchApartments();
+      final data = await _dashboardService.fetchApartments(
+        type: selectedCategory.value,
+        rentalFilter: rentalFilter.value,
+        minRent: minPrice.value,
+        maxRent: maxPrice.value,
+        bedrooms: minBedrooms.value,
+        bathrooms: minBathrooms.value,
+        advancePayment: advancePayment.value,
+        securityDeposit: securityDeposit.value,
+        city: selectedCity.value,
+        neighborhood: neighborhood.value,
+        page: page.value,
+        limit: limit.value,
+      );
       normalApartments.value = data;
     } catch (e) {
       errorMessage.value = e.toString();
@@ -71,7 +158,20 @@ class OwnerDashboardController extends GetxController {
 
   Future<void> fetchFurnishedApartments() async {
     try {
-      final data = await _dashboardService.fetchFurnishedApartments();
+      final data = await _dashboardService.fetchFurnishedApartments(
+        type: selectedCategory.value,
+        rentalFilter: rentalFilter.value,
+        minRent: minPrice.value,
+        maxRent: maxPrice.value,
+        bedrooms: minBedrooms.value,
+        bathrooms: minBathrooms.value,
+        advancePayment: advancePayment.value,
+        securityDeposit: securityDeposit.value,
+        city: selectedCity.value,
+        neighborhood: neighborhood.value,
+        page: page.value,
+        limit: limit.value,
+      );
       furnishedApartments.value = data;
       AppLoggerHelper.debug(
         'Fetched ${furnishedApartments.length} furnished apartments',
@@ -80,6 +180,69 @@ class OwnerDashboardController extends GetxController {
       errorMessage.value = e.toString();
       furnishedApartments.value = [];
     }
+  }
+
+  /// Apply filters and refresh lists
+  Future<void> applyFilters({
+    String? category,
+    String? city,
+    int? minBedrooms,
+    int? minBathrooms,
+    double? minPrice,
+    double? maxPrice,
+    String? rentalFilter,
+    String? advancePayment,
+    String? securityDeposit,
+    String? neighborhood,
+    int? page,
+    int? limit,
+  }) async {
+    AppLoggerHelper.debug(
+      'Applying filters: category=$category, city=$city, minBedrooms=$minBedrooms, rentalFilter=$rentalFilter',
+    );
+
+    selectedCategory.value = category;
+    selectedCity.value = city;
+    this.minBedrooms.value = minBedrooms;
+    this.minBathrooms.value = minBathrooms;
+    this.minPrice.value = minPrice;
+    this.maxPrice.value = maxPrice;
+    this.rentalFilter.value = rentalFilter;
+    this.advancePayment.value = advancePayment;
+    this.securityDeposit.value = securityDeposit;
+    this.neighborhood.value = neighborhood;
+    this.page.value = page;
+    this.limit.value = limit;
+
+    isDashboardLoading.value = true;
+    try {
+      await fetchAllProducts();
+      AppLoggerHelper.debug(
+        'Filters applied successfully. Total: ${allProducts.length}',
+      );
+    } catch (e) {
+      AppLoggerHelper.error('Error applying filters', e);
+    } finally {
+      isDashboardLoading.value = false;
+    }
+  }
+
+  void clearFilters() {
+    AppLoggerHelper.debug('Clearing all filters');
+    selectedCategory.value = null;
+    selectedCity.value = null;
+    minBedrooms.value = null;
+    minBathrooms.value = null;
+    minPrice.value = null;
+    maxPrice.value = null;
+    rentalFilter.value = null;
+    advancePayment.value = null;
+    securityDeposit.value = null;
+    neighborhood.value = null;
+    page.value = null;
+    limit.value = null;
+    // reload lists without filters
+    loadDashboard();
   }
 
   Future<OwnerProperty?> getPropertyById(String id) async {

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:yannyamba/core/models/property/furnished_apartment_model.dart';
 import 'package:yannyamba/core/utils/constants/app_texts.dart';
 import 'package:yannyamba/features/owners/controllers/owner_navigation_controller.dart';
 import 'package:yannyamba/features/owners/property/presentation/screeens/furnish_apartments_details.dart';
 import 'package:yannyamba/features/owners/property/presentation/screeens/normal_apartments_details.dart';
 import '../widgets/widgets.dart';
+import '../widgets/filter_bottom_sheet.dart';
 import '../../../widgets/widgets.dart';
 import '../../controllers/owner_dashboard_controller.dart';
 
@@ -80,45 +82,105 @@ class OwnersDashboardScreen extends StatelessWidget {
                 SliverFillRemaining(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: DefaultTabController(
-                      length: 2,
-                      child: Column(
-                        children: [
-                          SectionHeader(
-                            title: AppText.myProperties.tr,
-                            actionText: AppText.addProperty.tr,
-                            onActionTap: () {
-                              Get.find<OwnerNavigationController>()
-                                  .goToAddProperty();
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: const Color(0xFFF5F5F5),
-                            ),
-                            child: TabBar(
-                              indicatorColor: Colors.black,
-                              labelColor: Colors.black,
-                              unselectedLabelColor: Colors.grey,
-                              tabs: [
-                                Tab(text: AppText.furnishedApartment.tr),
-                                Tab(text: AppText.normalApartments.tr),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Expanded(
-                            child: TabBarView(
-                              children: [
-                                _buildFurnishedApartmentsList(controller),
-                                _buildNormalApartmentsList(controller),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: Column(
+                      children: [
+                        SectionHeader(
+                          title: AppText.myProperties.tr,
+                          actionText: AppText.addProperty.tr,
+                          onActionTap: () {
+                            Get.find<OwnerNavigationController>()
+                                .goToAddProperty();
+                          },
+                          onFilterTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(12),
+                                ),
+                              ),
+                              builder: (_) =>
+                                  FilterBottomSheet(controller: controller),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: Obx(() {
+                            if (controller.isDashboardLoading.value) {
+                              return ListView.builder(
+                                padding: EdgeInsets.zero,
+                                itemCount: 6,
+                                itemBuilder: (context, index) {
+                                  return const Padding(
+                                    padding: EdgeInsets.only(bottom: 16),
+                                    child: PropertyCardShimmer(),
+                                  );
+                                },
+                              );
+                            }
+
+                            final all = controller.allProducts;
+
+                            if (all.isEmpty) return _buildEmptyPropertyState();
+
+                            return ListView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: all.length,
+                              itemBuilder: (context, index) {
+                                final item = all[index];
+
+                                // FurnishedApartment has dailyRate, Apartment has rent
+                                final isFurnished = item is FurnishedApartment;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: PropertyCard(
+                                    imageUrl: item.images.isNotEmpty
+                                        ? item.images.first
+                                        : 'assets/images/home_image.png',
+                                    price: isFurnished
+                                        ? '₣ ${(item).dailyRate}'
+                                        : '₣ ${(item).rent}',
+                                    isNormal: !isFurnished,
+                                    views: item.totalViews ?? 0,
+                                    inquiries: item.inquiries ?? 0,
+                                    title: item.title,
+                                    address:
+                                        '${item.address.street}, ${item.address.city}',
+                                    advancePayment:
+                                        '${item.propertyDetails.advanceMonths} months',
+                                    distance: item.distanceToDowntown == 0
+                                        ? ''
+                                        : '${item.distanceToDowntown} km away',
+                                    onViewDetails: () {
+                                      if (isFurnished) {
+                                        Get.to(
+                                          () => FurnishedApartmentDetails(
+                                            apartmentId: item.id,
+                                            apartment:
+                                                item as FurnishedApartment,
+                                          ),
+                                        );
+                                      } else {
+                                        Get.to(
+                                          () => NormalApartmentsDetails(
+                                            apartmentId: item.id,
+                                            apartment: item,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    onDelete: () {},
+                                    onShare: () {},
+                                  ),
+                                );
+                              },
+                            );
+                          }),
+                        ),
+                      ],
                     ),
                   ),
                 ),

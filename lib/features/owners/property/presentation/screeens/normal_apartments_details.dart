@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:yannyamba/core/utils/constants/colors.dart';
+import 'package:yannyamba/core/models/property/property_models.dart'
+    show Apartment;
+import 'package:yannyamba/features/owners/dashboard/controllers/owner_dashboard_controller.dart';
 import 'package:yannyamba/features/owners/property/presentation/widgets/owner_owner_contact_widget.dart';
 import 'package:yannyamba/features/owners/property/presentation/widgets/owner_reference_widget.dart';
 import 'package:yannyamba/features/renters/bookings/presentation/widgets/booking_dialog.dart';
@@ -11,11 +14,39 @@ import '../../../../renters/home/presentation/widgets/widgets.dart';
 
 class NormalApartmentsDetails extends StatelessWidget {
   final String apartmentId;
+  final Apartment? apartment;
 
-  const NormalApartmentsDetails({super.key, required this.apartmentId});
+  const NormalApartmentsDetails({
+    super.key,
+    required this.apartmentId,
+    this.apartment,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (apartment != null) {
+      return _buildScaffold(context, apartment!);
+    }
+
+    // Owner flow: try OwnerDashboardController lists first
+    Apartment? ownerApartment;
+    try {
+      final ownerController = Get.find<OwnerDashboardController>();
+      ownerApartment = ownerController.allProducts.firstWhereOrNull(
+        (apt) => apt.id == apartmentId,
+      );
+      ownerApartment ??= ownerController.homeProducts.firstWhereOrNull(
+        (apt) => apt.id == apartmentId,
+      );
+      ownerApartment ??= ownerController.officeProducts.firstWhereOrNull(
+        (apt) => apt.id == apartmentId,
+      );
+    } catch (_) {}
+
+    if (ownerApartment != null) {
+      return _buildScaffold(context, ownerApartment);
+    }
+
     final ApartmentController controller = Get.find<ApartmentController>();
 
     return Obx(() {
@@ -30,64 +61,66 @@ class NormalApartmentsDetails extends StatelessWidget {
         );
       }
 
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: CustomScrollView(
-          slivers: [
-            HeaderImageAppBar(apartment: apartment),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    PriceAndAddress(apartment: apartment),
-                    SizedBox(height: 16.h),
-                    // ViewOnLocationButton(apartment: apartment),
-                    // SizedBox(height: 20.h),
-                    OwnerOwnerContactWidget(apartment: apartment),
-                    if (apartment.referenceContacts.isNotEmpty) ...{
-                      SizedBox(height: 20.h),
-                      OwnerReferenceWidget(apartment: apartment),
-                    },
+      return _buildScaffold(context, apartment);
+    });
+  }
+
+  Widget _buildScaffold(BuildContext context, Apartment apartment) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          HeaderImageAppBar(apartment: apartment),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PriceAndAddress(apartment: apartment),
+                  SizedBox(height: 16.h),
+                  OwnerOwnerContactWidget(apartment: apartment),
+                  if (apartment.referenceContacts.isNotEmpty) ...{
                     SizedBox(height: 20.h),
-                    AboutSection(apartment: apartment),
-                    SizedBox(height: 20.h),
-                    PropertyDetails(apartment: apartment),
-                    SizedBox(height: 20.h),
-                    FeaturesAmenities(apartment: apartment),
-                    SizedBox(height: 20.h),
-                  ],
-                ),
+                    OwnerReferenceWidget(apartment: apartment),
+                  },
+                  SizedBox(height: 20.h),
+                  AboutSection(apartment: apartment),
+                  SizedBox(height: 20.h),
+                  PropertyDetails(apartment: apartment),
+                  SizedBox(height: 20.h),
+                  FeaturesAmenities(apartment: apartment),
+                  SizedBox(height: 20.h),
+                ],
               ),
             ),
-          ],
-        ),
-        bottomNavigationBar: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              child: ElevatedButton(
-                onPressed: () => showBookingDialog(
-                  context: context,
-                  apartmentId: apartment.id,
+          ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            child: ElevatedButton(
+              onPressed: () => showBookingDialog(
+                context: context,
+                apartmentId: apartment.id,
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryBlue,
+                side: BorderSide.none,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryBlue,
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Book Now',
-                  style: TextStyle(fontFamily: 'Montserrat'),
-                ),
+              ),
+              child: const Text(
+                'Book Now',
+                style: TextStyle(fontFamily: 'Montserrat'),
               ),
             ),
           ),
         ),
-      );
-    });
+      ),
+    );
   }
 }

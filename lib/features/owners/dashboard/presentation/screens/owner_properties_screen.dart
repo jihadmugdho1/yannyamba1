@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:yannyamba/core/models/property/property_models.dart';
 import 'package:yannyamba/core/utils/constants/app_texts.dart';
 import 'package:yannyamba/features/owners/bookings/controllers/owner_bookings_controller.dart';
 import 'package:yannyamba/features/owners/bookings/presentation/screens/owner_booking_details_screen.dart';
@@ -40,7 +41,7 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _dashboardController.refreshDashboard();
+      _dashboardController.refreshMyProperties();
       _bookingsController.refreshBookings();
     });
   }
@@ -102,10 +103,7 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               children: [
-                SectionHeader(
-                  title: AppText.myProperties.tr,
-                  actionText: '',
-                ),
+                SectionHeader(title: AppText.myProperties.tr, actionText: ''),
                 const SizedBox(height: 12),
                 Container(
                   decoration: BoxDecoration(
@@ -118,8 +116,8 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
                     labelColor: Colors.black,
                     unselectedLabelColor: Colors.grey,
                     tabs: const [
-                      Tab(text: "Furnished Apartments"),
-                      Tab(text: "Normal Apartments"),
+                      Tab(text: "Office"),
+                      Tab(text: "Home"),
                       Tab(text: "My Bookings"),
                     ],
                   ),
@@ -129,8 +127,8 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildFurnishedApartmentsList(_dashboardController),
-                      _buildNormalApartmentsList(_dashboardController),
+                      _buildOfficePropertiesList(_dashboardController),
+                      _buildHomePropertiesList(_dashboardController),
                       _buildMyBookingsList(_bookingsController),
                     ],
                   ),
@@ -143,12 +141,12 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
     );
   }
 
-  Widget _buildNormalApartmentsList(OwnerDashboardController controller) {
+  Widget _buildHomePropertiesList(OwnerDashboardController controller) {
     return Obx(() {
       final isLoading = controller.isDashboardLoading.value;
-      final list = controller.normalApartments;
+      final list = controller.homeProducts;
       return RefreshIndicator(
-        onRefresh: controller.refreshDashboard,
+        onRefresh: controller.refreshMyProperties,
         child: Builder(
           builder: (context) {
             if (isLoading) {
@@ -180,13 +178,19 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
               itemCount: list.length,
               itemBuilder: (context, index) {
                 final property = list[index];
+                final furnished = property is FurnishedApartment
+                    ? property
+                    : null;
+                final isFurnished = furnished != null;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: PropertyCard(
                     imageUrl: property.images.isNotEmpty
                         ? property.images.first
                         : 'assets/images/home_image.png',
-                    price: '₣ ${property.rent}',
+                    price: isFurnished
+                        ? '₣ ${furnished.dailyRate}'
+                        : '₣ ${property.rent}',
                     views: property.totalViews ?? 0,
                     inquiries: property.inquiries ?? 0,
                     title: property.title,
@@ -196,14 +200,28 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
                         '${property.propertyDetails.advanceMonths} months',
                     distance: '${property.distanceToDowntown} km away',
                     onViewDetails: () {
-                      Get.to(
-                        () => NormalApartmentsDetails(
-                          apartmentId: property.id,
-                        ),
-                      );
+                      if (isFurnished) {
+                        Get.to(
+                          () => FurnishedApartmentDetails(
+                            apartmentId: property.id,
+                            apartment: furnished,
+                          ),
+                        );
+                      } else {
+                        Get.to(
+                          () => NormalApartmentsDetails(
+                            apartmentId: property.id,
+                            apartment: property,
+                          ),
+                        );
+                      }
                     },
                     onDelete: () {
-                      _showDeleteDialog(property.id, property.title, controller);
+                      _showDeleteDialog(
+                        property.id,
+                        property.title,
+                        controller,
+                      );
                     },
                     onShare: () {},
                   ),
@@ -216,12 +234,12 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
     });
   }
 
-  Widget _buildFurnishedApartmentsList(OwnerDashboardController controller) {
+  Widget _buildOfficePropertiesList(OwnerDashboardController controller) {
     return Obx(() {
       final isLoading = controller.isDashboardLoading.value;
-      final list = controller.furnishedApartments;
+      final list = controller.officeProducts;
       return RefreshIndicator(
-        onRefresh: controller.refreshDashboard,
+        onRefresh: controller.refreshMyProperties,
         child: Builder(
           builder: (context) {
             if (isLoading) {
@@ -253,14 +271,20 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
               itemCount: list.length,
               itemBuilder: (context, index) {
                 final property = list[index];
+                final furnished = property is FurnishedApartment
+                    ? property
+                    : null;
+                final isFurnished = furnished != null;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: PropertyCard(
                     imageUrl: property.images.isNotEmpty
                         ? property.images.first
                         : 'assets/images/home_image.png',
-                    price: '₣ ${property.dailyRate}',
-                    isNormal: false,
+                    price: isFurnished
+                        ? '₣ ${furnished.dailyRate}'
+                        : '₣ ${property.rent}',
+                    isNormal: !isFurnished,
                     views: property.totalViews ?? 0,
                     inquiries: property.inquiries ?? 0,
                     title: property.title,
@@ -270,14 +294,28 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
                         '${property.propertyDetails.advanceMonths} months',
                     distance: '${property.distanceToDowntown} km away',
                     onViewDetails: () {
-                      Get.to(
-                        () => FurnishedApartmentDetails(
-                          apartmentId: property.id,
-                        ),
-                      );
+                      if (isFurnished) {
+                        Get.to(
+                          () => FurnishedApartmentDetails(
+                            apartmentId: property.id,
+                            apartment: furnished,
+                          ),
+                        );
+                      } else {
+                        Get.to(
+                          () => NormalApartmentsDetails(
+                            apartmentId: property.id,
+                            apartment: property,
+                          ),
+                        );
+                      }
                     },
                     onDelete: () {
-                      _showDeleteDialog(property.id, property.title, controller);
+                      _showDeleteDialog(
+                        property.id,
+                        property.title,
+                        controller,
+                      );
                     },
                     onShare: () {},
                   ),

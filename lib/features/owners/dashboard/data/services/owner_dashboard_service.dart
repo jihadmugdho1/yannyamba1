@@ -158,12 +158,23 @@ class OwnerDashboardService {
 
   Future<List<Apartment>> fetchApartments({
     String? type,
+    String? rentalFilter,
     double? minRent,
     double? maxRent,
-    int? minRooms,
+    int? bedrooms,
+    int? bathrooms,
+    String? advancePayment,
+    String? securityDeposit,
+    String? city,
+    String? neighborhood,
+    int? page,
+    int? limit,
+    void Function(Map<String, dynamic>? meta)? onMeta,
   }) async {
     try {
-      AppLoggerHelper.debug('Fetching normal apartments from API...');
+      AppLoggerHelper.debug(
+        'Fetching normal apartments from API with filters...',
+      );
       final token = await StorageService.getToken();
       if (token == null) {
         AppLoggerHelper.error(
@@ -173,15 +184,52 @@ class OwnerDashboardService {
         return [];
       }
 
+      final endpoint = ApiConstants.getOwnerNormalProperties.split('?').first;
+
+      final queryParams = <String, dynamic>{
+        if (type != null) 'property_category': type,
+        if (rentalFilter != null) 'rental_filter': rentalFilter,
+        if (minRent != null) 'price_min': minRent.toInt(),
+        if (maxRent != null) 'price_max': maxRent.toInt(),
+        if (bedrooms != null) 'bedrooms': bedrooms,
+        if (bathrooms != null) 'bathrooms': bathrooms,
+        if (advancePayment != null) 'advance_payment': advancePayment,
+        if (securityDeposit != null) 'security_deposit': securityDeposit,
+        if (city != null) 'city': city,
+        if (neighborhood != null) 'neighborhood': neighborhood,
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+      };
+
+      // Ensure listing_type is included for owner endpoint
+      queryParams['listing_type'] = 'Normal Apartment';
+
       final response = await _networkCaller.getRequest(
-        ApiConstants.getOwnerNormalProperties,
-        headers: {'Authorization': '$token'},
+        endpoint,
+        headers: {'Authorization': token},
+        queryParams: queryParams,
       );
 
       AppLoggerHelper.debug('Response isSuccess: ${response.isSuccess}');
 
       if (response.isSuccess && response.responseData != null) {
         final data = response.responseData;
+
+        // attempt to extract pagination/meta info and attach if present
+        Map<String, dynamic>? meta;
+        if (data is Map<String, dynamic>) {
+          if (data['meta'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['meta']);
+          } else if (data['pagination'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['pagination']);
+          } else if (data['data'] is Map<String, dynamic> &&
+              data['data']['meta'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['data']['meta']);
+          }
+        }
+
+        // expose meta via callback
+        if (onMeta != null) onMeta(meta);
 
         AppLoggerHelper.debug('Response data type: ${data.runtimeType}');
 
@@ -193,7 +241,7 @@ class OwnerDashboardService {
             'Found ${apartmentsJson.length} apartments in response',
           );
 
-          var apartments = apartmentsJson
+          final apartments = apartmentsJson
               .map((json) {
                 try {
                   return Apartment.fromJson(json);
@@ -208,29 +256,6 @@ class OwnerDashboardService {
           AppLoggerHelper.debug(
             'Successfully parsed ${apartments.length} apartments',
           );
-
-          // Apply filters
-          if (type != null && type != 'All') {
-            apartments = apartments.where((apt) => apt.type == type).toList();
-          }
-
-          if (minRent != null) {
-            apartments = apartments
-                .where((apt) => apt.rent >= minRent)
-                .toList();
-          }
-
-          if (maxRent != null) {
-            apartments = apartments
-                .where((apt) => apt.rent <= maxRent)
-                .toList();
-          }
-
-          if (minRooms != null) {
-            apartments = apartments
-                .where((apt) => apt.rooms >= minRooms)
-                .toList();
-          }
 
           return apartments;
         } else {
@@ -254,7 +279,21 @@ class OwnerDashboardService {
     }
   }
 
-  Future<List<FurnishedApartment>> fetchFurnishedApartments() async {
+  Future<List<FurnishedApartment>> fetchFurnishedApartments({
+    String? type,
+    String? rentalFilter,
+    double? minRent,
+    double? maxRent,
+    int? bedrooms,
+    int? bathrooms,
+    String? advancePayment,
+    String? securityDeposit,
+    String? city,
+    String? neighborhood,
+    int? page,
+    int? limit,
+    void Function(Map<String, dynamic>? meta)? onMeta,
+  }) async {
     try {
       AppLoggerHelper.debug('Fetching furnished apartments...');
       final token = await StorageService.getToken();
@@ -266,15 +305,52 @@ class OwnerDashboardService {
         return [];
       }
 
+      final endpoint = ApiConstants.getOwnerFurnishedProperties
+          .split('?')
+          .first;
+
+      final queryParams = <String, dynamic>{
+        if (type != null) 'property_category': type,
+        if (rentalFilter != null) 'rental_filter': rentalFilter,
+        if (minRent != null) 'price_min': minRent.toInt(),
+        if (maxRent != null) 'price_max': maxRent.toInt(),
+        if (bedrooms != null) 'bedrooms': bedrooms,
+        if (bathrooms != null) 'bathrooms': bathrooms,
+        if (advancePayment != null) 'advance_payment': advancePayment,
+        if (securityDeposit != null) 'security_deposit': securityDeposit,
+        if (city != null) 'city': city,
+        if (neighborhood != null) 'neighborhood': neighborhood,
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+      };
+
+      queryParams['listing_type'] = 'Furnished Apartment';
+
       final response = await _networkCaller.getRequest(
-        ApiConstants.getOwnerFurnishedProperties,
-        headers: {'Authorization': '$token'},
+        endpoint,
+        headers: {'Authorization': token},
+        queryParams: queryParams,
       );
 
       AppLoggerHelper.debug('Response isSuccess: ${response.isSuccess}');
 
       if (response.isSuccess && response.responseData != null) {
         final data = response.responseData;
+
+        // attempt to extract pagination/meta info and attach if present
+        Map<String, dynamic>? meta;
+        if (data is Map<String, dynamic>) {
+          if (data['meta'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['meta']);
+          } else if (data['pagination'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['pagination']);
+          } else if (data['data'] is Map<String, dynamic> &&
+              data['data']['meta'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['data']['meta']);
+          }
+        }
+
+        if (onMeta != null) onMeta(meta);
 
         AppLoggerHelper.debug('Response data type: ${data.runtimeType}');
 
@@ -286,7 +362,7 @@ class OwnerDashboardService {
             'Found ${apartmentsJson.length} apartments in response',
           );
 
-          final apartments = apartmentsJson
+          var apartments = apartmentsJson
               .map((json) {
                 try {
                   final apt = FurnishedApartment.fromJson(json);
@@ -301,6 +377,36 @@ class OwnerDashboardService {
               })
               .whereType<FurnishedApartment>()
               .toList();
+
+          // If server-side filtering is preferred, call endpoint with query params instead.
+          // For now, also apply client-side filters as a fallback.
+          if (type != null && type != 'All') {
+            apartments = apartments.where((apt) => apt.type == type).toList();
+          }
+
+          if (minRent != null) {
+            apartments = apartments
+                .where((apt) => apt.dailyRate >= minRent)
+                .toList();
+          }
+
+          if (maxRent != null) {
+            apartments = apartments
+                .where((apt) => apt.dailyRate <= maxRent)
+                .toList();
+          }
+
+          if (bedrooms != null) {
+            apartments = apartments
+                .where((apt) => apt.rooms >= bedrooms)
+                .toList();
+          }
+
+          if (bathrooms != null) {
+            apartments = apartments
+                .where((apt) => apt.washrooms >= bathrooms)
+                .toList();
+          }
 
           AppLoggerHelper.debug(
             'Successfully parsed ${apartments.length} apartments',
@@ -322,6 +428,175 @@ class OwnerDashboardService {
       return [];
     } catch (e, stackTrace) {
       AppLoggerHelper.error('Error fetching furnished apartments', e);
+      AppLoggerHelper.debug('Stack trace: $stackTrace');
+      return [];
+    }
+  }
+
+  Future<List<Apartment>> fetchAllProducts({
+    String? type,
+    String? rentalFilter,
+    double? minRent,
+    double? maxRent,
+    int? bedrooms,
+    int? bathrooms,
+    String? advancePayment,
+    String? securityDeposit,
+    String? city,
+    String? neighborhood,
+    int? page,
+    int? limit,
+    void Function(Map<String, dynamic>? meta)? onMeta,
+  }) async {
+    try {
+      AppLoggerHelper.debug('Fetching ALL products from API...');
+      final token = await StorageService.getToken();
+
+      final queryParams = <String, dynamic>{
+        if (type != null) 'property_category': type,
+        if (rentalFilter != null) 'rental_filter': rentalFilter,
+        if (minRent != null) 'price_min': minRent.toInt(),
+        if (maxRent != null) 'price_max': maxRent.toInt(),
+        if (bedrooms != null) 'bedrooms': bedrooms,
+        if (bathrooms != null) 'bathrooms': bathrooms,
+        if (advancePayment != null) 'advance_payment': advancePayment,
+        if (securityDeposit != null) 'security_deposit': securityDeposit,
+        if (city != null) 'city': city,
+        if (neighborhood != null) 'neighborhood': neighborhood,
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+      };
+
+      final response = await _networkCaller.getRequest(
+        ApiConstants.getAllProducts,
+        headers: {
+          if (token != null && token.isNotEmpty) 'Authorization': token,
+        },
+        queryParams: queryParams.isEmpty ? null : queryParams,
+      );
+
+      AppLoggerHelper.debug(
+        'All products response isSuccess: ${response.isSuccess}',
+      );
+
+      if (response.isSuccess && response.responseData != null) {
+        final data = response.responseData;
+
+        Map<String, dynamic>? meta;
+        if (data is Map<String, dynamic>) {
+          if (data['meta'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['meta']);
+          } else if (data['pagination'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['pagination']);
+          }
+        }
+        if (onMeta != null) onMeta(meta);
+
+        if (data is Map && data['data'] != null && data['data'] is List) {
+          final List<dynamic> listJson = data['data'];
+          AppLoggerHelper.debug('ALL products raw count: ${listJson.length}');
+
+          final parsed = listJson
+              .map((json) {
+                try {
+                  if (json is! Map) return null;
+                  final map = Map<String, dynamic>.from(json);
+                  final hasDailyRate =
+                      map['daily_rate'] != null || map['dailyRate'] != null;
+                  if (hasDailyRate) return FurnishedApartment.fromJson(map);
+                  return Apartment.fromJson(map);
+                } catch (e) {
+                  AppLoggerHelper.error('Error parsing product', e);
+                  return null;
+                }
+              })
+              .whereType<Apartment>()
+              .toList();
+
+          AppLoggerHelper.debug('ALL products parsed count: ${parsed.length}');
+          return parsed;
+        }
+
+        AppLoggerHelper.error(
+          'Data structure mismatch',
+          'Expected Map with data array, got: ${data.runtimeType}',
+        );
+      }
+
+      AppLoggerHelper.error(
+        'Failed to fetch all products',
+        response.errorMessage,
+      );
+      return [];
+    } catch (e, stackTrace) {
+      AppLoggerHelper.error('Error fetching all products', e);
+      AppLoggerHelper.debug('Stack trace: $stackTrace');
+      return [];
+    }
+  }
+
+  Future<List<Apartment>> fetchMyselfProducts({
+    required String propertyCategory,
+  }) async {
+    try {
+      AppLoggerHelper.debug(
+        'Fetching MY products for property_category=$propertyCategory ...',
+      );
+      final token = await StorageService.getToken();
+
+      final response = await _networkCaller.getRequest(
+        ApiConstants.getOwnerMyselfProducts,
+        headers: {
+          if (token != null && token.isNotEmpty) 'Authorization': token,
+        },
+        queryParams: {'property_category': propertyCategory},
+      );
+
+      if (!response.isSuccess || response.responseData == null) {
+        AppLoggerHelper.error(
+          'Failed to fetch my products',
+          response.errorMessage,
+        );
+        return [];
+      }
+
+      final data = response.responseData;
+      if (data is Map && data['data'] != null && data['data'] is List) {
+        final List<dynamic> listJson = data['data'];
+        AppLoggerHelper.debug(
+          'MY products raw count ($propertyCategory): ${listJson.length}',
+        );
+
+        final parsed = listJson
+            .map((json) {
+              try {
+                if (json is! Map) return null;
+                final map = Map<String, dynamic>.from(json);
+                final hasDailyRate =
+                    map['daily_rate'] != null || map['dailyRate'] != null;
+                if (hasDailyRate) return FurnishedApartment.fromJson(map);
+                return Apartment.fromJson(map);
+              } catch (e) {
+                AppLoggerHelper.error('Error parsing my product', e);
+                return null;
+              }
+            })
+            .whereType<Apartment>()
+            .toList();
+
+        AppLoggerHelper.debug(
+          'MY products parsed count ($propertyCategory): ${parsed.length}',
+        );
+        return parsed;
+      }
+
+      AppLoggerHelper.error(
+        'Data structure mismatch',
+        'Expected Map with data array, got: ${data.runtimeType}',
+      );
+      return [];
+    } catch (e, stackTrace) {
+      AppLoggerHelper.error('Error fetching my products', e);
       AppLoggerHelper.debug('Stack trace: $stackTrace');
       return [];
     }

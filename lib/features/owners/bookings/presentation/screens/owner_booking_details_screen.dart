@@ -19,13 +19,11 @@ class OwnerBookingDetailsScreen extends StatefulWidget {
   });
 
   @override
-  State<OwnerBookingDetailsScreen> createState() =>
-      _OwnerBookingDetailsScreenState();
+  State<OwnerBookingDetailsScreen> createState() => _OwnerBookingDetailsScreenState();
 }
 
 class _OwnerBookingDetailsScreenState extends State<OwnerBookingDetailsScreen> {
-  final OwnerBookingsController _controller =
-      Get.find<OwnerBookingsController>();
+  final _controller = Get.find<OwnerBookingsController>();
 
   @override
   void initState() {
@@ -35,508 +33,292 @@ class _OwnerBookingDetailsScreenState extends State<OwnerBookingDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final apartment = widget.apartment;
-    final imageUrl = apartment?.primaryImageUrl.isNotEmpty == true
-        ? apartment!.primaryImageUrl
-        : 'assets/images/home_image.png';
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[50], // Lighter background for better contrast
       body: RefreshIndicator(
-        onRefresh: () =>
-            _controller.refreshApartmentBookings(widget.apartmentId),
+        onRefresh: () => _controller.refreshApartmentBookings(widget.apartmentId),
         child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverAppBar(
-              pinned: true,
-              expandedHeight: 220,
-              backgroundColor: Colors.white,
-              iconTheme: const IconThemeData(color: Colors.white),
-              leading: IconButton(
-                icon: const Icon(Iconsax.arrow_left_2),
-                onPressed: () => Get.back(),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Iconsax.refresh),
-                  onPressed: () =>
-                      _controller.fetchApartmentBookings(widget.apartmentId),
-                ),
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image(image: _resolveImage(imageUrl), fit: BoxFit.cover),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.45),
-                            Colors.black.withValues(alpha: 0.05),
-                            Colors.black.withValues(alpha: 0.6),
-                          ],
-                        ),
-                      ),
-                    ),
+            _buildAppBar(),
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  if (widget.apartment != null) ...[
+                    _ApartmentHeader(apartment: widget.apartment!),
+                    const SizedBox(height: 24),
                   ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Bookings',
-                      style: getTextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    if (apartment != null)
-                      _ApartmentSummaryCard(apartment: apartment),
-                    if (apartment != null) const SizedBox(height: 16),
-                    Obx(() {
-                      final state = _controller.getApartmentBookingsState(
-                        widget.apartmentId,
-                      );
-
-                      if (state.isLoading) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 24),
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
-                      }
-
-                      if (state.errorMessage.isNotEmpty) {
-                        return _ErrorState(
-                          message: state.errorMessage,
-                          onRetry: () => _controller.fetchApartmentBookings(
-                            widget.apartmentId,
-                          ),
-                        );
-                      }
-
-                      if (state.bookings.isEmpty) {
-                        return _EmptyState(
-                          onRetry: () => _controller.fetchApartmentBookings(
-                            widget.apartmentId,
-                          ),
-                        );
-                      }
-
-                      return ListView.separated(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: state.bookings.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final booking = state.bookings[index];
-                          final isSelected =
-                              widget.bookingId != null &&
-                              booking.id == widget.bookingId;
-                          return _BookingTile(
-                            booking: booking,
-                            highlight: isSelected,
-                          );
-                        },
-                      );
-                    }),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  ImageProvider _resolveImage(String imageUrl) {
-    final isNetwork =
-        imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
-    if (isNetwork) return NetworkImage(imageUrl);
-    if (imageUrl.startsWith('assets/')) return AssetImage(imageUrl);
-    return AssetImage('assets/images/home_image.png');
-  }
-}
-
-class _ApartmentSummaryCard extends StatelessWidget {
-  final BookingApartmentSummary apartment;
-
-  const _ApartmentSummaryCard({required this.apartment});
-
-  @override
-  Widget build(BuildContext context) {
-    final addressParts = [
-      if (apartment.neighborhood.isNotEmpty) apartment.neighborhood,
-      if (apartment.cityName.isNotEmpty) apartment.cityName,
-    ];
-    final address = addressParts.join(', ');
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            apartment.listingType.isNotEmpty
-                ? apartment.listingType
-                : 'Apartment',
-            style: getTextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textColor,
-            ),
-          ),
-          if (address.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              address,
-              style: getTextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textColor2,
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              if (apartment.propertyCategory.isNotEmpty)
-                _Chip(text: apartment.propertyCategory),
-              if (apartment.propertyCategory.isNotEmpty)
-                const SizedBox(width: 8),
-              if (apartment.dailyRate != null)
-                _Chip(text: '৳ ${apartment.dailyRate} / night'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String text;
-
-  const _Chip({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE5E7EB).withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        text,
-        style: getTextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textColor,
-        ),
-      ),
-    );
-  }
-}
-
-class _BookingTile extends StatelessWidget {
-  final OwnerBooking booking;
-  final bool highlight;
-
-  const _BookingTile({required this.booking, required this.highlight});
-
-  @override
-  Widget build(BuildContext context) {
-    final borderColor = highlight
-        ? const Color(0xFF2196F3)
-        : const Color(0xFFE5E7EB);
-    final bgColor = highlight
-        ? const Color(0xFF2196F3).withValues(alpha: 0.05)
-        : Colors.white;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  booking.ticketId.isNotEmpty ? booking.ticketId : 'Ticket',
-                  style: getTextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textColor,
+                  Text(
+                    'Booking History',
+                    style: getTextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
-                ),
+           
+                  _buildBookingsList(),
+                ]),
               ),
-              _StatusPill(status: booking.status),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _DetailRow(
-            icon: Iconsax.user,
-            label: 'Customer',
-            value: booking.customer.name.isNotEmpty
-                ? booking.customer.name
-                : '-',
-          ),
-          const SizedBox(height: 6),
-          _DetailRow(
-            icon: Iconsax.call,
-            label: 'Phone',
-            value: booking.phone.isNotEmpty
-                ? booking.phone
-                : booking.customer.phone,
-          ),
-          const SizedBox(height: 6),
-          _DetailRow(
-            icon: Iconsax.calendar_1,
-            label: 'Stay',
-            value: _formatRange(booking.startDate, booking.endDate),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  String _formatRange(DateTime? start, DateTime? end) {
-    final formatter = DateFormat('d MMM, yyyy');
-    if (start == null && end == null) return '-';
-    if (start != null && end == null) return formatter.format(start.toLocal());
-    if (start == null && end != null) return formatter.format(end.toLocal());
-    return '${formatter.format(start!.toLocal())} - ${formatter.format(end!.toLocal())}';
+  Widget _buildAppBar() {
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: 200,
+      leading: const BackButton(color: Colors.white),
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            _HeaderImage(imageUrl: widget.apartment?.primaryImageUrl),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black45, Colors.transparent, Colors.black87],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookingsList() {
+    return Obx(() {
+      final state = _controller.getApartmentBookingsState(widget.apartmentId);
+
+      if (state.isLoading) return const Center(child: CircularProgressIndicator.adaptive());
+      
+      if (state.errorMessage.isNotEmpty) {
+        return _StatusFeedback(
+          icon: Iconsax.warning_2,
+          title: 'Error loading bookings',
+          message: state.errorMessage,
+          onRetry: () => _controller.fetchApartmentBookings(widget.apartmentId),
+        );
+      }
+
+      if (state.bookings.isEmpty) {
+        return const _StatusFeedback(
+          icon: Iconsax.calendar_remove,
+          title: 'No bookings found',
+          message: 'This apartment hasn\'t received any bookings yet.',
+        );
+      }
+
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: state.bookings.length,
+       
+        itemBuilder: (context, index) => _BookingCard(
+          booking: state.bookings[index],
+          isSelected: state.bookings[index].id == widget.bookingId,
+        ),
+      );
+    });
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
+class _HeaderImage extends StatelessWidget {
+  final String? imageUrl;
 
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  const _HeaderImage({this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final url = (imageUrl ?? '').trim();
+    if (url.isEmpty) {
+      return Image.asset('assets/images/home_image.png', fit: BoxFit.cover);
+    }
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(color: Colors.grey[200]);
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset('assets/images/home_image.png', fit: BoxFit.cover);
+      },
+    );
+  }
+}
+
+class _ApartmentHeader extends StatelessWidget {
+  final BookingApartmentSummary apartment;
+  const _ApartmentHeader({required this.apartment});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: AppColors.textColor2),
-        const SizedBox(width: 8),
         Text(
-          '$label: ',
-          style: getTextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textColor,
-          ),
+          apartment.listingType.isEmpty ? 'Apartment' : apartment.listingType,
+          style: getTextStyle(fontSize: 22, fontWeight: FontWeight.w800),
         ),
-        Expanded(
-          child: Text(
-            value.isNotEmpty ? value : '-',
-            style: getTextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textColor,
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            const Icon(Iconsax.location, size: 14, color: AppColors.textColor2),
+            const SizedBox(width: 4),
+            Text(
+              '${apartment.neighborhood}, ${apartment.cityName}',
+              style: getTextStyle(fontSize: 14, color: AppColors.textColor2),
             ),
-            overflow: TextOverflow.ellipsis,
-          ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          children: [
+            _Tag(text: apartment.propertyCategory, color: Colors.blue),
+            _Tag(text: '৳ ${apartment.dailyRate}/night', color: Colors.green),
+          ],
         ),
       ],
     );
   }
 }
 
-class _StatusPill extends StatelessWidget {
+class _BookingCard extends StatelessWidget {
+  final OwnerBooking booking;
+  final bool isSelected;
+
+  const _BookingCard({required this.booking, this.isSelected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isSelected ? Colors.blue : const Color(0xFFE5E7EB), width: isSelected ? 2 : 1),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                booking.ticketId,
+                style: getTextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+              _StatusChip(status: booking.status),
+            ],
+          ),
+          const Divider(height: 24),
+          _InfoRow(icon: Iconsax.user, label: 'Guest', value: booking.customer.name),
+          const SizedBox(height: 10),
+          _InfoRow(icon: Iconsax.call, label: 'Phone', value: booking.phone),
+          const SizedBox(height: 10),
+          _InfoRow(
+            icon: Iconsax.calendar_1,
+            label: 'Stay',
+            value: '${DateFormat('MMM d').format(booking.startDate!)} - ${DateFormat('MMM d, yyyy').format(booking.endDate!)}',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Reusable Small Components
+class _Tag extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _Tag({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(text, style: getTextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label, value;
+  const _InfoRow({required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey[400]),
+        const SizedBox(width: 10),
+        Text('$label:', style: getTextStyle(fontSize: 13, color: AppColors.textColor2)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(value, style: getTextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
   final String status;
-
-  const _StatusPill({required this.status});
+  const _StatusChip({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final normalized = status.trim().toUpperCase();
-    final Color bg;
-    final Color fg;
-    switch (normalized) {
-      case 'CONFIRMED':
-        bg = const Color(0xFFE7F8EE);
-        fg = const Color(0xFF1E7F3C);
-        break;
-      case 'CANCELLED':
-        bg = const Color(0xFFFDECEC);
-        fg = const Color(0xFFC62828);
-        break;
-      case 'PENDING':
-        bg = const Color(0xFFFFF4E5);
-        fg = const Color(0xFFB26A00);
-        break;
-      default:
-        bg = const Color(0xFFEFF2F6);
-        fg = const Color(0xFF4B5563);
-    }
+    final bool isConfirmed = status.toUpperCase() == 'CONFIRMED';
+    final bool isCancelled = status.toUpperCase() == 'CANCELLED';
+    
+    final color = isConfirmed ? Colors.green : (isCancelled ? Colors.red : Colors.orange);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
       child: Text(
-        normalized.isEmpty ? '-' : normalized,
-        style: getTextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
+        status.toUpperCase(),
+        style: getTextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: color),
       ),
     );
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final VoidCallback onRetry;
+class _StatusFeedback extends StatelessWidget {
+  final IconData icon;
+  final String title, message;
+  final VoidCallback? onRetry;
 
-  const _EmptyState({required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Center(
-        child: Column(
-          children: [
-            const Icon(Iconsax.calendar, size: 48, color: Color(0xFFE5E7EB)),
-            const SizedBox(height: 16),
-            Text(
-              'No bookings yet',
-              style: getTextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF282828),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Pull to refresh or try again',
-              style: getTextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF686868),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2196F3),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text(
-                AppText.retry.tr,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'Montserrat',
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _ErrorState({required this.message, required this.onRetry});
+  const _StatusFeedback({required this.icon, required this.title, required this.message, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Center(
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
           children: [
-            const Icon(Iconsax.warning_2, size: 48, color: Color(0xFFE5E7EB)),
+            Icon(icon, size: 48, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            Text(
-              'Failed to load bookings',
-              style: getTextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF282828),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: getTextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF686868),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2196F3),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text(
-                AppText.retry.tr,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'Montserrat',
-                ),
-              ),
-            ),
+            Text(title, style: getTextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(message, textAlign: TextAlign.center, style: getTextStyle(color: Colors.grey)),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              TextButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Try Again')),
+            ]
           ],
         ),
       ),
