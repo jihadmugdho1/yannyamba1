@@ -22,176 +22,169 @@ class OwnersDashboardScreen extends StatelessWidget {
       children: [
         const OwnerAppBar(userName: 'James'),
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              await controller.refreshDashboard();
-            },
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 8),
-                      Obx(() {
-                        if (controller.isDashboardLoading.value) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              children: [
-                                StatCardShimmer(),
-                                SizedBox(width: 8),
-                                StatCardShimmer(),
-                                SizedBox(width: 8),
-                                StatCardShimmer(),
-                              ],
-                            ),
-                          );
-                        }
-
-                        final stats = controller.dashboardStats.value;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    Obx(() {
+                      if (controller.isDashboardLoading.value) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
                           child: Row(
                             children: [
-                              StatCard(
-                                icon: Iconsax.eye4,
-                                value: '${stats?.totalViews ?? 0}',
-                                label: AppText.totalViews.tr,
-                              ),
-                              const SizedBox(width: 8),
-                              StatCard(
-                                icon: Iconsax.message_25,
-                                value: '${stats?.inquiries ?? 0}',
-                                label: AppText.inquiries.tr,
-                              ),
-                              const SizedBox(width: 8),
-                              StatCard(
-                                icon: Iconsax.verify5,
-                                value: '${stats?.activeListings ?? 0}',
-                                label: AppText.activeListings.tr,
-                              ),
+                              StatCardShimmer(),
+                              SizedBox(width: 8),
+                              StatCardShimmer(),
+                              SizedBox(width: 8),
+                              StatCardShimmer(),
                             ],
                           ),
                         );
-                      }),
-                      const SizedBox(height: 12),
-                    ],
-                  ),
-                ),
-                SliverFillRemaining(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        SectionHeader(
-                          title: AppText.myProperties.tr,
-                          actionText: AppText.addProperty.tr,
-                          onActionTap: () {
-                            Get.find<OwnerNavigationController>()
-                                .goToAddProperty();
-                          },
-                          onFilterTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(12),
-                                ),
-                              ),
-                              builder: (_) => FilterBottomSheet(
-                                ownerController: controller,
-                              ),
-                            );
-                          },
+                      }
+
+                      final stats = controller.dashboardStats.value;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            StatCard(
+                              icon: Iconsax.eye4,
+                              value: '${stats?.totalViews ?? 0}',
+                              label: AppText.totalViews.tr,
+                            ),
+                            const SizedBox(width: 8),
+                            StatCard(
+                              icon: Iconsax.message_25,
+                              value: '${stats?.inquiries ?? 0}',
+                              label: AppText.inquiries.tr,
+                            ),
+                            const SizedBox(width: 8),
+                            StatCard(
+                              icon: Iconsax.verify5,
+                              value: '${stats?.activeListings ?? 0}',
+                              label: AppText.activeListings.tr,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 12),
-                        Expanded(
-                          child: Obx(() {
-                            if (controller.isDashboardLoading.value) {
-                              return ListView.builder(
-                                padding: EdgeInsets.zero,
-                                itemCount: 6,
-                                itemBuilder: (context, index) {
-                                  return const Padding(
-                                    padding: EdgeInsets.only(bottom: 16),
-                                    child: PropertyCardShimmer(),
-                                  );
-                                },
-                              );
-                            }
-
-                            final all = controller.myselfProducts;
-
-                            if (all.isEmpty) return _buildEmptyPropertyState();
-
+                      );
+                    }),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+              SliverFillRemaining(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      SectionHeader(
+                        title: AppText.myProperties.tr,
+                        actionText: AppText.addProperty.tr,
+                        onActionTap: () {
+                          Get.find<OwnerNavigationController>()
+                              .goToAddProperty();
+                        },
+                        onFilterTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                            ),
+                            builder: (_) =>
+                                FilterBottomSheet(ownerController: controller),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: Obx(() {
+                          if (controller.isDashboardLoading.value) {
                             return ListView.builder(
                               padding: EdgeInsets.zero,
-                              itemCount: all.length,
+                              itemCount: 6,
                               itemBuilder: (context, index) {
-                                final item = all[index];
-
-                                // FurnishedApartment has dailyRate, Apartment has rent
-                                final isFurnished = item is FurnishedApartment;
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: PropertyCard(
-                                    productId: item.id,
-                                    imageUrl: item.images.isNotEmpty
-                                        ? item.images.first
-                                        : 'assets/images/home_image.png',
-                                    price: isFurnished
-                                        ? '₣ ${(item).dailyRate}'
-                                        : '₣ ${(item).rent}',
-                                    isNormal: !isFurnished,
-                                    views: item.totalViews ?? 0,
-                                    inquiries: item.inquiries ?? 0,
-                                    title: item.title,
-                                    address:
-                                        '${item.address.street}, ${item.address.city}',
-                                    advancePayment:
-                                        '${item.propertyDetails.advanceMonths} months',
-                                    distance: item.distanceToDowntown == 0
-                                        ? ''
-                                        : '${item.distanceToDowntown} km away',
-                                    onViewDetails: () {
-                                      if (isFurnished) {
-                                        Get.to(
-                                          () => FurnishedApartmentDetails(
-                                            apartmentId: item.id,
-                                            apartment:
-                                                item as FurnishedApartment,
-                                          ),
-                                        );
-                                      } else {
-                                        Get.to(
-                                          () => NormalApartmentsDetails(
-                                            apartmentId: item.id,
-                                            apartment: item,
-                                          ),
-                                        );
-                                      }
-                                    },
-                                    onDelete: () => _confirmDelete(
-                                      context,
-                                      controller,
-                                      item.id,
-                                    ),
-                                    onShare: () {},
-                                  ),
+                                return const Padding(
+                                  padding: EdgeInsets.only(bottom: 16),
+                                  child: PropertyCardShimmer(),
                                 );
                               },
                             );
-                          }),
-                        ),
-                      ],
-                    ),
+                          }
+
+                          final all = controller.myselfProducts;
+
+                          if (all.isEmpty) return _buildEmptyPropertyState();
+
+                          return ListView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: all.length,
+                            itemBuilder: (context, index) {
+                              final item = all[index];
+
+                              // FurnishedApartment has dailyRate, Apartment has rent
+                              final isFurnished = item is FurnishedApartment;
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: PropertyCard(
+                                  productId: item.id,
+                                  imageUrl: item.images.isNotEmpty
+                                      ? item.images.first
+                                      : 'assets/images/home_image.png',
+                                  price: isFurnished
+                                      ? '₣ ${(item).dailyRate}'
+                                      : '₣ ${(item).rent}',
+                                  isNormal: !isFurnished,
+                                  views: item.totalViews ?? 0,
+                                  inquiries: item.inquiries ?? 0,
+                                  title: item.title,
+                                  address:
+                                      '${item.address.street}, ${item.address.city}',
+                                  advancePayment:
+                                      '${item.propertyDetails.advanceMonths} months',
+                                  distance: item.distanceToDowntown == 0
+                                      ? ''
+                                      : '${item.distanceToDowntown} km away',
+                                  onViewDetails: () {
+                                    if (isFurnished) {
+                                      Get.to(
+                                        () => FurnishedApartmentDetails(
+                                          apartmentId: item.id,
+                                          apartment: item,
+                                        ),
+                                      );
+                                    } else {
+                                      Get.to(
+                                        () => NormalApartmentsDetails(
+                                          apartmentId: item.id,
+                                          apartment: item,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  onDelete: () => _confirmDelete(
+                                    context,
+                                    controller,
+                                    item.id,
+                                  ),
+                                  onShare: () {},
+                                ),
+                              );
+                            },
+                          );
+                        }),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],

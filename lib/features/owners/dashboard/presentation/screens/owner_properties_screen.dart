@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:yannyamba/core/models/property/property_models.dart';
 import 'package:yannyamba/core/utils/constants/app_texts.dart';
 import 'package:yannyamba/features/owners/bookings/controllers/owner_bookings_controller.dart';
 import 'package:yannyamba/features/owners/bookings/presentation/screens/owner_booking_details_screen.dart';
@@ -10,8 +9,6 @@ import '../../../controllers/owner_navigation_controller.dart';
 import '../widgets/widgets.dart';
 import '../../../widgets/widgets.dart';
 import '../../controllers/owner_dashboard_controller.dart';
-import 'package:yannyamba/features/owners/property/presentation/screeens/furnish_apartments_details.dart';
-import 'package:yannyamba/features/owners/property/presentation/screeens/normal_apartments_details.dart';
 
 class OwnerPropertiesScreen extends StatefulWidget {
   const OwnerPropertiesScreen({super.key});
@@ -108,7 +105,7 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SectionHeader(
-                        title: AppText.myProperties.tr,
+                        title: AppText.myBookings.tr,
                         actionText: '',
                       ),
                       const SizedBox(height: 12),
@@ -132,74 +129,67 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
       final isLoading = bookingsController.isLoading.value;
       final errorMessage = bookingsController.errorMessage.value;
       final list = bookingsController.bookings;
-      return RefreshIndicator(
-        onRefresh: bookingsController.refreshBookings,
-        child: Builder(
-          builder: (context) {
-            if (isLoading) {
-              return ListView.builder(
-                padding: EdgeInsets.zero,
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: 3,
-                itemBuilder: (context, index) {
-                  return const Padding(
-                    padding: EdgeInsets.only(bottom: 16),
-                    child: PropertyCardShimmer(isNormal: true),
-                  );
-                },
-              );
-            }
+      if (isLoading) {
+        return ListView.builder(
+          padding: EdgeInsets.zero,
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: 3,
+          itemBuilder: (context, index) {
+            return const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: PropertyCardShimmer(isNormal: true),
+            );
+          },
+        );
+      }
 
-            if (errorMessage.isNotEmpty) {
-              return ListView(
-                padding: EdgeInsets.zero,
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  SizedBox(
-                    height: 400,
-                    child: _errorState(
-                      errorMessage,
-                      bookingsController.refreshBookings,
-                    ),
-                  ),
-                ],
-              );
-            }
+      if (errorMessage.isNotEmpty) {
+        return ListView(
+          padding: EdgeInsets.zero,
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            SizedBox(
+              height: 400,
+              child: _errorState(
+                errorMessage,
+                bookingsController.refreshBookings,
+              ),
+            ),
+          ],
+        );
+      }
 
-            // list is already captured above
-            if (list.isEmpty) {
-              return ListView(
-                padding: EdgeInsets.zero,
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [SizedBox(height: 400, child: _emptyBookingsState())],
-              );
-            }
+      // list is already captured above
+      if (list.isEmpty) {
+        return ListView(
+          padding: EdgeInsets.zero,
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [SizedBox(height: 400, child: _emptyBookingsState())],
+        );
+      }
 
-            return ListView.builder(
-              padding: EdgeInsets.zero,
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: list.length,
-              itemBuilder: (context, index) {
-                final booking = list[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: OwnerBookingCard(
-                    booking: booking,
-                    onViewDetails: () {
-                      Get.to(
-                        () => OwnerBookingDetailsScreen(
-                          apartmentId: booking.apartmentId,
-                          bookingId: booking.id,
-                          apartment: booking.apartment,
-                        ),
-                      );
-                    },
+      return ListView.builder(
+        padding: EdgeInsets.zero,
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: list.length,
+        itemBuilder: (context, index) {
+          final booking = list[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: OwnerBookingCard(
+              booking: booking,
+              onViewDetails: () {
+                Get.to(
+                  () => OwnerBookingDetailsScreen(
+                    apartmentId: booking.apartmentId,
+                    bookingId: booking.id,
+                    apartment: booking.apartment,
                   ),
                 );
               },
-            );
-          },
-        ),
+            ),
+          );
+        },
       );
     });
   }
