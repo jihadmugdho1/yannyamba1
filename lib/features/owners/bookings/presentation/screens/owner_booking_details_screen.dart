@@ -112,6 +112,7 @@ class _OwnerBookingDetailsScreenState extends State<OwnerBookingDetailsScreen> {
       }
 
       return ListView.builder(
+        padding: EdgeInsets.symmetric(vertical: 12),
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: state.bookings.length,
@@ -201,7 +202,7 @@ class _BookingCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isSelected ? Colors.blue : const Color(0xFFE5E7EB), width: isSelected ? 2 : 1),
+      
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
         ],

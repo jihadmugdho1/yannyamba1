@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:yannyamba/core/core.dart';
 
 /// Reusable section header widget
@@ -32,11 +33,7 @@ class SectionHeader extends StatelessWidget {
         ),
         Row(
           children: [
-            if (onFilterTap != null)
-              IconButton(
-                onPressed: onFilterTap,
-                icon: const Icon(Icons.filter_list, size: 20),
-              ),
+           
             if (actionText != null)
               GestureDetector(
                 onTap: onActionTap,
@@ -48,6 +45,11 @@ class SectionHeader extends StatelessWidget {
                     color: Color(0xFF211F1F),
                   ),
                 ),
+              ),
+               if (onFilterTap != null)
+              IconButton(
+                onPressed: onFilterTap,
+                icon: const Icon(Iconsax.filter, size: 20),
               ),
           ],
         )

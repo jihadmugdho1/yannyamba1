@@ -57,6 +57,7 @@ dependencies:
   app_links: ^7.0.0
   flutter_phone_direct_caller: ^2.2.1
   country_code_picker: ^3.4.1
+  lucide_icons: ^0.257.0
 
 dev_dependencies:
   flutter_test:
