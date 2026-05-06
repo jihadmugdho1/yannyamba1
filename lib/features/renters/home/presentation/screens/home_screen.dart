@@ -88,6 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
         showFilter: true,
         onSearchTap: _showCitySelectionBottomSheet,
         onFilterTap: () async {
+
+          
           await Get.to(() => FurnishedApartmentFilterScreen());
         },
       ),

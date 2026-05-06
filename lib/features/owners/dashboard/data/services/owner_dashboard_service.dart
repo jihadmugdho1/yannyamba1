@@ -467,6 +467,10 @@ class OwnerDashboardService {
         if (limit != null) 'limit': limit,
       };
 
+      AppLoggerHelper.debug(
+        'ALL products request: endpoint=${ApiConstants.getAllProducts} queryParams=$queryParams',
+      );
+
       final response = await _networkCaller.getRequest(
         ApiConstants.getAllProducts,
         headers: {
@@ -478,6 +482,11 @@ class OwnerDashboardService {
       AppLoggerHelper.debug(
         'All products response isSuccess: ${response.isSuccess}',
       );
+      if (!response.isSuccess) {
+        AppLoggerHelper.debug(
+          'All products response errorMessage: ${response.errorMessage}',
+        );
+      }
 
       if (response.isSuccess && response.responseData != null) {
         final data = response.responseData;
@@ -567,6 +576,10 @@ class OwnerDashboardService {
       );
       final token = await StorageService.getToken();
 
+      AppLoggerHelper.debug(
+        'MY products request: endpoint=${ApiConstants.getOwnerMyselfProducts} queryParams=${propertyCategory != null ? {'property_category': propertyCategory} : null}',
+      );
+
       final response = await _networkCaller.getRequest(
         ApiConstants.getOwnerMyselfProducts,
         headers: {
@@ -577,6 +590,9 @@ class OwnerDashboardService {
             : null,
       );
 
+      AppLoggerHelper.debug(
+        'MY products response isSuccess: ${response.isSuccess}',
+      );
       if (!response.isSuccess || response.responseData == null) {
         AppLoggerHelper.error(
           'Failed to fetch my products',

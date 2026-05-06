@@ -26,9 +26,6 @@ class SearchableMultiSelectDropdown extends StatefulWidget {
 
 class _SearchableMultiSelectDropdownState
     extends State<SearchableMultiSelectDropdown> {
-  late TextEditingController _searchController;
-  late List<String> _filteredItems;
-
   // Helper to get selected items as a list
   List<String> get _selectedList {
     if (widget.selectedItems is Set<String>) {
@@ -52,9 +49,6 @@ class _SearchableMultiSelectDropdownState
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
-    _filteredItems = List.from(widget.allItems);
-    _searchController.addListener(_filterItems);
   }
 
   @override
@@ -70,21 +64,7 @@ class _SearchableMultiSelectDropdownState
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
-  }
-
-  void _filterItems() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredItems = List.from(widget.allItems);
-      } else {
-        _filteredItems = widget.allItems
-            .where((item) => item.toLowerCase().contains(query))
-            .toList();
-      }
-    });
   }
 
   @override
@@ -124,9 +104,21 @@ class _SearchableMultiSelectDropdownState
   }
 
   Future<void> _showSelectionDialog() async {
-    // Reset search when opening
-    _searchController.clear();
-    _filteredItems = List.from(widget.allItems);
+    final searchController = TextEditingController();
+    var filteredItems = List<String>.from(widget.allItems);
+
+    void applyFilter(void Function(void Function()) setModalState) {
+      final query = searchController.text.trim().toLowerCase();
+      setModalState(() {
+        if (query.isEmpty) {
+          filteredItems = List<String>.from(widget.allItems);
+        } else {
+          filteredItems = widget.allItems
+              .where((item) => item.toLowerCase().contains(query))
+              .toList();
+        }
+      });
+    }
 
     await showModalBottomSheet(
       context: context,
@@ -139,7 +131,12 @@ class _SearchableMultiSelectDropdownState
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Container(
-              padding: EdgeInsets.all(20.w),
+              padding: EdgeInsets.fromLTRB(
+                20.w,
+                20.w,
+                20.w,
+                20.w + MediaQuery.viewInsetsOf(context).bottom,
+              ),
               height: MediaQuery.of(context).size.height * 0.7,
               child: SafeArea(
                 child: Column(
@@ -166,14 +163,14 @@ class _SearchableMultiSelectDropdownState
 
                     // Search field
                     TextField(
-                      controller: _searchController,
+                      controller: searchController,
                       decoration: InputDecoration(
                         hintText: 'Search ${widget.title.toLowerCase()}...',
                         prefixIcon: Icon(
                           Icons.search,
                           color: Colors.grey.shade600,
                         ),
-                        suffixIcon: _searchController.text.isNotEmpty
+                        suffixIcon: searchController.text.isNotEmpty
                             ? IconButton(
                                 icon: Icon(
                                   Icons.clear,
@@ -181,8 +178,9 @@ class _SearchableMultiSelectDropdownState
                                 ),
                                 onPressed: () {
                                   setModalState(() {
-                                    _searchController.clear();
+                                    searchController.clear();
                                   });
+                                  applyFilter(setModalState);
                                 },
                               )
                             : null,
@@ -198,9 +196,7 @@ class _SearchableMultiSelectDropdownState
                         ),
                       ),
                       onChanged: (value) {
-                        setModalState(() {
-                          _filterItems();
-                        });
+                        applyFilter(setModalState);
                       },
                     ),
                     SizedBox(height: 16.h),
@@ -221,7 +217,7 @@ class _SearchableMultiSelectDropdownState
 
                     // List of items
                     Expanded(
-                      child: _filteredItems.isEmpty
+                      child: filteredItems.isEmpty
                           ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -243,9 +239,9 @@ class _SearchableMultiSelectDropdownState
                               ),
                             )
                           : ListView.builder(
-                              itemCount: _filteredItems.length,
+                              itemCount: filteredItems.length,
                               itemBuilder: (context, index) {
-                                final item = _filteredItems[index];
+                                final item = filteredItems[index];
                                 final isSelected = _isSelected(item);
                                 return CheckboxListTile(
                                   title: Text(
@@ -254,10 +250,10 @@ class _SearchableMultiSelectDropdownState
                                   ),
                                   value: isSelected,
                                   onChanged: (bool? value) {
-                                    setModalState(() {
-                                      widget.onToggle(item);
-                                    });
-                                    setState(() {}); // Update parent widget
+                                    widget.onToggle(item);
+                                    // keep modal state in sync (checkbox)
+                                    setModalState(() {});
+                                    if (mounted) setState(() {});
                                   },
                                   controlAffinity:
                                       ListTileControlAffinity.leading,
@@ -298,5 +294,8 @@ class _SearchableMultiSelectDropdownState
         );
       },
     );
+
+    searchController.dispose();
+    if (mounted) setState(() {});
   }
 }

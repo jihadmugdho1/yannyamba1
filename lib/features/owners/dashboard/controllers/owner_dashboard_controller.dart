@@ -19,6 +19,7 @@ class OwnerDashboardController extends GetxController {
   final myselfProducts = <Apartment>[].obs;
   final homeProducts = <Apartment>[].obs;
   final officeProducts = <Apartment>[].obs;
+  final List<Apartment> _unfilteredMyselfProducts = <Apartment>[];
 
   final isDashboardLoading = false.obs;
   final isRefreshing = false.obs;
@@ -60,10 +61,17 @@ class OwnerDashboardController extends GetxController {
   Future<void> fetchMyProducts() async {
     try {
       final data = await _dashboardService.fetchMyselfProducts();
-      myselfProducts.value = data;
-      AppLoggerHelper.debug('Fetched ${myselfProducts.length} own products');
+      _unfilteredMyselfProducts
+        ..clear()
+        ..addAll(data);
+      final filtered = _filterApartments(_unfilteredMyselfProducts);
+      myselfProducts.value = filtered;
+      AppLoggerHelper.debug(
+        'Fetched ${_unfilteredMyselfProducts.length} own products; showing ${myselfProducts.length} after filters',
+      );
     } catch (e) {
       errorMessage.value = e.toString();
+      _unfilteredMyselfProducts.clear();
       myselfProducts.value = [];
     }
   }
@@ -241,9 +249,14 @@ class OwnerDashboardController extends GetxController {
 
     isDashboardLoading.value = true;
     try {
-      await fetchAllProducts();
+      if (_unfilteredMyselfProducts.isEmpty) {
+        await fetchMyProducts();
+      } else {
+        final filtered = _filterApartments(_unfilteredMyselfProducts);
+        myselfProducts.value = filtered;
+      }
       AppLoggerHelper.debug(
-        'Filters applied successfully. Total: ${allProducts.length}',
+        'Filters applied successfully. Base=${_unfilteredMyselfProducts.length} showing=${myselfProducts.length}',
       );
     } catch (e) {
       AppLoggerHelper.error('Error applying filters', e);
@@ -268,6 +281,80 @@ class OwnerDashboardController extends GetxController {
     limit.value = null;
     // reload lists without filters
     loadDashboard();
+  }
+
+  List<Apartment> _filterApartments(List<Apartment> input) {
+    if (input.isEmpty) return const [];
+
+    final selectedCategoryValue = selectedCategory.value?.trim();
+    final selectedCityValue = selectedCity.value?.trim();
+    final neighborhoodValue = neighborhood.value?.trim();
+
+    final cities = (selectedCityValue == null || selectedCityValue.isEmpty)
+        ? const <String>[]
+        : selectedCityValue
+              .split(',')
+              .map((c) => c.trim().toLowerCase())
+              .where((c) => c.isNotEmpty)
+              .toSet();
+
+    final neighborhoods =
+        (neighborhoodValue == null || neighborhoodValue.isEmpty)
+        ? const <String>[]
+        : neighborhoodValue
+              .split(',')
+              .map((n) => n.trim().toLowerCase())
+              .where((n) => n.isNotEmpty)
+              .toSet();
+
+    final minBedroomsValue = minBedrooms.value;
+    final minBathroomsValue = minBathrooms.value;
+    final minPriceValue = minPrice.value;
+    final maxPriceValue = maxPrice.value;
+
+    bool cityMatches(Apartment apt) {
+      if (cities.isEmpty) return true;
+      final aptCity = apt.address.city.trim().toLowerCase();
+      return cities.contains(aptCity);
+    }
+
+    bool neighborhoodMatches(Apartment apt) {
+      if (neighborhoods.isEmpty) return true;
+      // NOTE: In our models, API "neighborhood" maps to Address.street.
+      final aptNeighborhood = apt.address.street.trim().toLowerCase();
+      return neighborhoods.contains(aptNeighborhood);
+    }
+
+    double effectivePrice(Apartment apt) {
+      if (apt is FurnishedApartment) return apt.dailyRate;
+      return apt.rent;
+    }
+
+    return input.where((apt) {
+      if (selectedCategoryValue != null &&
+          selectedCategoryValue.isNotEmpty &&
+          apt.type.trim().toLowerCase() !=
+              selectedCategoryValue.toLowerCase()) {
+        return false;
+      }
+
+      if (!cityMatches(apt)) return false;
+      if (!neighborhoodMatches(apt)) return false;
+
+      if (minBedroomsValue != null && apt.rooms < minBedroomsValue) {
+        return false;
+      }
+
+      if (minBathroomsValue != null && apt.washrooms < minBathroomsValue) {
+        return false;
+      }
+
+      final price = effectivePrice(apt);
+      if (minPriceValue != null && price < minPriceValue) return false;
+      if (maxPriceValue != null && price > maxPriceValue) return false;
+
+      return true;
+    }).toList();
   }
 
   Future<OwnerProperty?> getPropertyById(String id) async {

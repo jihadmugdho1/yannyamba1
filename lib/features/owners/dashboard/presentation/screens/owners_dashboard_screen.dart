@@ -100,8 +100,8 @@ class OwnersDashboardScreen extends StatelessWidget {
                                   top: Radius.circular(12),
                                 ),
                               ),
-                              builder: (_) =>
-                                  FilterBottomSheet(controller: controller),
+                                builder: (_) =>
+                                  FilterBottomSheet(ownerController: controller),
                             );
                           },
                         ),
