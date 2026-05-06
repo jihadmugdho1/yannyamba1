@@ -42,6 +42,9 @@ class ApiConstants {
 
   static const String getOwnerStats = "$baseUrl/product/get-stat";
 
+  static String hideApartment(String productId) =>
+      "$baseUrl/product/hide-apartment/$productId";
+
   static const String addBookingDates =
       "$baseUrl/product/add-booking-date/{propertyId}";
 

@@ -121,7 +121,7 @@ class OwnersDashboardScreen extends StatelessWidget {
                               );
                             }
 
-                            final all = controller.allProducts;
+                            final all = controller.myselfProducts;
 
                             if (all.isEmpty) return _buildEmptyPropertyState();
 
@@ -137,6 +137,7 @@ class OwnersDashboardScreen extends StatelessWidget {
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 16),
                                   child: PropertyCard(
+                                    productId: item.id,
                                     imageUrl: item.images.isNotEmpty
                                         ? item.images.first
                                         : 'assets/images/home_image.png',
@@ -172,7 +173,11 @@ class OwnersDashboardScreen extends StatelessWidget {
                                         );
                                       }
                                     },
-                                    onDelete: () {},
+                                    onDelete: () => _confirmDelete(
+                                      context,
+                                      controller,
+                                      item.id,
+                                    ),
                                     onShare: () {},
                                   ),
                                 );
@@ -219,6 +224,7 @@ class OwnersDashboardScreen extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: PropertyCard(
+              productId: property.id,
               imageUrl: property.images.isNotEmpty
                   ? property.images.first
                   : 'assets/images/home_image.png',
@@ -271,6 +277,7 @@ class OwnersDashboardScreen extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: PropertyCard(
+              productId: property.id,
               imageUrl: property.images.isNotEmpty
                   ? property.images.first
                   : 'assets/images/home_image.png',
@@ -298,6 +305,42 @@ class OwnersDashboardScreen extends StatelessWidget {
       );
     });
   }
+}
+
+void _confirmDelete(
+  BuildContext context,
+  OwnerDashboardController controller,
+  String productId,
+) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Remove Property'),
+      content: const Text(
+        'Are you sure you want to remove this property? It will be hidden from listings.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () async {
+            Navigator.of(ctx).pop();
+            final success = await controller.hideProperty(productId);
+            if (!success) {
+              Get.snackbar(
+                'Error',
+                'Failed to remove property. Please try again.',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            }
+          },
+          child: const Text('Remove', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
 }
 
 Widget _buildEmptyPropertyState() {

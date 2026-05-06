@@ -16,6 +16,7 @@ class OwnerDashboardController extends GetxController {
   final normalApartments = <Apartment>[].obs;
   final furnishedApartments = <FurnishedApartment>[].obs;
   final allProducts = <Apartment>[].obs;
+  final myselfProducts = <Apartment>[].obs;
   final homeProducts = <Apartment>[].obs;
   final officeProducts = <Apartment>[].obs;
 
@@ -49,10 +50,34 @@ class OwnerDashboardController extends GetxController {
       await Future.wait([
         fetchDashboardStats(),
         fetchProperties(),
-        fetchAllProducts(),
+        fetchMyProducts(),
       ]);
     } finally {
       isDashboardLoading.value = false;
+    }
+  }
+
+  Future<void> fetchMyProducts() async {
+    try {
+      final data = await _dashboardService.fetchMyselfProducts();
+      myselfProducts.value = data;
+      AppLoggerHelper.debug('Fetched ${myselfProducts.length} own products');
+    } catch (e) {
+      errorMessage.value = e.toString();
+      myselfProducts.value = [];
+    }
+  }
+
+  Future<bool> hideProperty(String productId) async {
+    try {
+      final success = await _dashboardService.hideApartment(productId);
+      if (success) {
+        myselfProducts.removeWhere((p) => p.id == productId);
+      }
+      return success;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
     }
   }
 

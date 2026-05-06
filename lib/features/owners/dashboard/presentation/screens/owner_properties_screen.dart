@@ -185,6 +185,7 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: PropertyCard(
+                    productId: property.id,
                     imageUrl: property.images.isNotEmpty
                         ? property.images.first
                         : 'assets/images/home_image.png',
@@ -278,6 +279,7 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: PropertyCard(
+                    productId: property.id,
                     imageUrl: property.images.isNotEmpty
                         ? property.images.first
                         : 'assets/images/home_image.png',

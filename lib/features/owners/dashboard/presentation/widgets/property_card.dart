@@ -5,6 +5,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:yannyamba/core/core.dart';
 
 class PropertyCard extends StatelessWidget {
+  final String productId;
   final String imageUrl;
   final String price;
   final bool isNormal;
@@ -20,6 +21,7 @@ class PropertyCard extends StatelessWidget {
 
   const PropertyCard({
     super.key,
+    required this.productId,
     required this.imageUrl,
     required this.price,
     this.isNormal = true,

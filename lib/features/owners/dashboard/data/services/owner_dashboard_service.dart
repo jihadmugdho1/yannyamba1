@@ -535,12 +535,35 @@ class OwnerDashboardService {
     }
   }
 
+  Future<bool> hideApartment(String productId) async {
+    try {
+      AppLoggerHelper.debug('Hiding apartment $productId...');
+      final token = await StorageService.getToken();
+      if (token == null || token.isEmpty) {
+        AppLoggerHelper.error('No auth token', 'Cannot hide apartment');
+        return false;
+      }
+
+      final response = await _networkCaller.patchRequest(
+        ApiConstants.hideApartment(productId),
+        headers: {'Authorization': token},
+        body: {'isHidden': true},
+      );
+
+      AppLoggerHelper.debug('Hide apartment response: ${response.isSuccess}');
+      return response.isSuccess;
+    } catch (e) {
+      AppLoggerHelper.error('Error hiding apartment', e);
+      return false;
+    }
+  }
+
   Future<List<Apartment>> fetchMyselfProducts({
-    required String propertyCategory,
+    String? propertyCategory,
   }) async {
     try {
       AppLoggerHelper.debug(
-        'Fetching MY products for property_category=$propertyCategory ...',
+        'Fetching MY products${propertyCategory != null ? ' for property_category=$propertyCategory' : ''}...',
       );
       final token = await StorageService.getToken();
 
@@ -549,7 +572,9 @@ class OwnerDashboardService {
         headers: {
           if (token != null && token.isNotEmpty) 'Authorization': token,
         },
-        queryParams: {'property_category': propertyCategory},
+        queryParams: propertyCategory != null
+            ? {'property_category': propertyCategory}
+            : null,
       );
 
       if (!response.isSuccess || response.responseData == null) {
