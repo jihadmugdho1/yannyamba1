@@ -100,8 +100,9 @@ class OwnersDashboardScreen extends StatelessWidget {
                                   top: Radius.circular(12),
                                 ),
                               ),
-                                builder: (_) =>
-                                  FilterBottomSheet(ownerController: controller),
+                              builder: (_) => FilterBottomSheet(
+                                ownerController: controller,
+                              ),
                             );
                           },
                         ),
@@ -315,16 +316,32 @@ void _confirmDelete(
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      backgroundColor: Colors.white,
       title: const Text('Remove Property'),
       content: const Text(
         'Are you sure you want to remove this property? It will be hidden from listings.',
       ),
       actions: [
         TextButton(
+          style: TextButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            backgroundColor: Colors.green.withOpacity(0.1),
+            foregroundColor: Colors.green,
+          ),
           onPressed: () => Navigator.of(ctx).pop(),
           child: const Text('Cancel'),
         ),
         TextButton(
+          style: TextButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            backgroundColor: Colors.red.withOpacity(0.1),
+            foregroundColor: Colors.red,
+          ),
           onPressed: () async {
             Navigator.of(ctx).pop();
             final success = await controller.hideProperty(productId);

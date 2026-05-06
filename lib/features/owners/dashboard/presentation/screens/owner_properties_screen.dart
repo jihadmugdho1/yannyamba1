@@ -103,33 +103,19 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               children: [
-                SectionHeader(title: AppText.myProperties.tr, actionText: ''),
-                const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: const Color(0xFFF5F5F5),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: Colors.black,
-                    labelColor: Colors.black,
-                    unselectedLabelColor: Colors.grey,
-                    tabs: const [
-                      Tab(text: "Office"),
-                      Tab(text: "Home"),
-                      Tab(text: "My Bookings"),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildOfficePropertiesList(_dashboardController),
-                      _buildHomePropertiesList(_dashboardController),
-                      _buildMyBookingsList(_bookingsController),
+                      SectionHeader(
+                        title: AppText.myProperties.tr,
+                        actionText: '',
+                      ),
+                      const SizedBox(height: 12),
+
+                      Expanded(
+                        child: _buildMyBookingsList(_bookingsController),
+                      ),
                     ],
                   ),
                 ),
@@ -139,195 +125,6 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
         ),
       ],
     );
-  }
-
-  Widget _buildHomePropertiesList(OwnerDashboardController controller) {
-    return Obx(() {
-      final isLoading = controller.isDashboardLoading.value;
-      final list = controller.homeProducts;
-      return RefreshIndicator(
-        onRefresh: controller.refreshMyProperties,
-        child: Builder(
-          builder: (context) {
-            if (isLoading) {
-              return ListView.builder(
-                padding: EdgeInsets.zero,
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: 3,
-                itemBuilder: (context, index) {
-                  return const Padding(
-                    padding: EdgeInsets.only(bottom: 16),
-                    child: PropertyCardShimmer(isNormal: true),
-                  );
-                },
-              );
-            }
-
-            // list is already captured above
-            if (list.isEmpty) {
-              return ListView(
-                padding: EdgeInsets.zero,
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [SizedBox(height: 400, child: _emptyState())],
-              );
-            }
-
-            return ListView.builder(
-              padding: EdgeInsets.zero,
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: list.length,
-              itemBuilder: (context, index) {
-                final property = list[index];
-                final furnished = property is FurnishedApartment
-                    ? property
-                    : null;
-                final isFurnished = furnished != null;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: PropertyCard(
-                    productId: property.id,
-                    imageUrl: property.images.isNotEmpty
-                        ? property.images.first
-                        : 'assets/images/home_image.png',
-                    price: isFurnished
-                        ? '₣ ${furnished.dailyRate}'
-                        : '₣ ${property.rent}',
-                    views: property.totalViews ?? 0,
-                    inquiries: property.inquiries ?? 0,
-                    title: property.title,
-                    address:
-                        '${property.address.street}, ${property.address.city}',
-                    advancePayment:
-                        '${property.propertyDetails.advanceMonths} months',
-                    distance: '${property.distanceToDowntown} km away',
-                    onViewDetails: () {
-                      if (isFurnished) {
-                        Get.to(
-                          () => FurnishedApartmentDetails(
-                            apartmentId: property.id,
-                            apartment: furnished,
-                          ),
-                        );
-                      } else {
-                        Get.to(
-                          () => NormalApartmentsDetails(
-                            apartmentId: property.id,
-                            apartment: property,
-                          ),
-                        );
-                      }
-                    },
-                    onDelete: () {
-                      _showDeleteDialog(
-                        property.id,
-                        property.title,
-                        controller,
-                      );
-                    },
-                    onShare: () {},
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      );
-    });
-  }
-
-  Widget _buildOfficePropertiesList(OwnerDashboardController controller) {
-    return Obx(() {
-      final isLoading = controller.isDashboardLoading.value;
-      final list = controller.officeProducts;
-      return RefreshIndicator(
-        onRefresh: controller.refreshMyProperties,
-        child: Builder(
-          builder: (context) {
-            if (isLoading) {
-              return ListView.builder(
-                padding: EdgeInsets.zero,
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: 3,
-                itemBuilder: (context, index) {
-                  return const Padding(
-                    padding: EdgeInsets.only(bottom: 16),
-                    child: PropertyCardShimmer(isNormal: false),
-                  );
-                },
-              );
-            }
-
-            // list is already captured above
-            if (list.isEmpty) {
-              return ListView(
-                padding: EdgeInsets.zero,
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [SizedBox(height: 400, child: _emptyState())],
-              );
-            }
-
-            return ListView.builder(
-              padding: EdgeInsets.zero,
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: list.length,
-              itemBuilder: (context, index) {
-                final property = list[index];
-                final furnished = property is FurnishedApartment
-                    ? property
-                    : null;
-                final isFurnished = furnished != null;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: PropertyCard(
-                    productId: property.id,
-                    imageUrl: property.images.isNotEmpty
-                        ? property.images.first
-                        : 'assets/images/home_image.png',
-                    price: isFurnished
-                        ? '₣ ${furnished.dailyRate}'
-                        : '₣ ${property.rent}',
-                    isNormal: !isFurnished,
-                    views: property.totalViews ?? 0,
-                    inquiries: property.inquiries ?? 0,
-                    title: property.title,
-                    address:
-                        '${property.address.street}, ${property.address.city}',
-                    advancePayment:
-                        '${property.propertyDetails.advanceMonths} months',
-                    distance: '${property.distanceToDowntown} km away',
-                    onViewDetails: () {
-                      if (isFurnished) {
-                        Get.to(
-                          () => FurnishedApartmentDetails(
-                            apartmentId: property.id,
-                            apartment: furnished,
-                          ),
-                        );
-                      } else {
-                        Get.to(
-                          () => NormalApartmentsDetails(
-                            apartmentId: property.id,
-                            apartment: property,
-                          ),
-                        );
-                      }
-                    },
-                    onDelete: () {
-                      _showDeleteDialog(
-                        property.id,
-                        property.title,
-                        controller,
-                      );
-                    },
-                    onShare: () {},
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      );
-    });
   }
 
   Widget _buildMyBookingsList(OwnerBookingsController bookingsController) {
