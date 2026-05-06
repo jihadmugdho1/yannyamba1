@@ -14,6 +14,9 @@ class FurnishedApartmentService {
   /// If you pass [listingType], it will request a filtered result from API.
   Future<List<FurnishedApartment>> fetchFurnishedApartments({
     String? listingType,
+    int? page,
+    int? limit,
+    void Function(Map<String, dynamic>? meta)? onMeta,
   }) async {
     try {
       AppLoggerHelper.debug('Fetching furnished apartments...');
@@ -22,6 +25,8 @@ class FurnishedApartmentService {
         queryParams: {
           if (listingType != null && listingType.trim().isNotEmpty)
             'listing_type': listingType.trim(),
+          if (page != null) 'page': page,
+          if (limit != null) 'limit': limit,
         },
       );
 
@@ -34,6 +39,19 @@ class FurnishedApartmentService {
 
         // Extract the data array from the response
         if (data is Map && data['data'] != null && data['data'] is List) {
+          Map<String, dynamic>? meta;
+          if (data is Map<String, dynamic>) {
+            if (data['meta'] is Map<String, dynamic>) {
+              meta = Map<String, dynamic>.from(data['meta']);
+            } else if (data['pagination'] is Map<String, dynamic>) {
+              meta = Map<String, dynamic>.from(data['pagination']);
+            } else if (data['data'] is Map<String, dynamic> &&
+                data['data']['meta'] is Map<String, dynamic>) {
+              meta = Map<String, dynamic>.from(data['data']['meta']);
+            }
+          }
+          if (onMeta != null) onMeta(meta);
+
           final List<dynamic> apartmentsJson = data['data'];
 
           AppLoggerHelper.debug(

@@ -11,6 +11,8 @@ class OwnerDashboardController extends GetxController {
   OwnerDashboardController({required OwnerDashboardService dashboardService})
     : _dashboardService = dashboardService;
 
+  static const int myProductsPageSize = 5;
+
   final dashboardStats = Rxn<DashboardStats>();
   final properties = <OwnerProperty>[].obs;
   final normalApartments = <Apartment>[].obs;
@@ -24,6 +26,11 @@ class OwnerDashboardController extends GetxController {
   final isDashboardLoading = false.obs;
   final isRefreshing = false.obs;
   final errorMessage = ''.obs;
+
+  // Pagination state for "My Properties" (myselfProducts)
+  final _myProductsPage = 1.obs;
+  final _myProductsHasNextPage = true.obs;
+  final isMyProductsLoadingMore = false.obs;
 
   // Filter state
   final selectedCategory = RxnString();
@@ -51,28 +58,80 @@ class OwnerDashboardController extends GetxController {
       await Future.wait([
         fetchDashboardStats(),
         fetchProperties(),
-        fetchMyProducts(),
+        fetchMyProducts(reset: true),
       ]);
     } finally {
       isDashboardLoading.value = false;
     }
   }
 
-  Future<void> fetchMyProducts() async {
+  bool get canLoadMoreMyProducts =>
+      _myProductsHasNextPage.value &&
+      !isDashboardLoading.value &&
+      !isMyProductsLoadingMore.value;
+
+  int get myProductsPage => _myProductsPage.value;
+  bool get myProductsHasNextPage => _myProductsHasNextPage.value;
+
+  Future<void> fetchMyProducts({required bool reset}) async {
     try {
-      final data = await _dashboardService.fetchMyselfProducts();
-      _unfilteredMyselfProducts
-        ..clear()
-        ..addAll(data);
+      if (reset) {
+        _myProductsPage.value = 1;
+        _myProductsHasNextPage.value = true;
+        errorMessage.value = '';
+        _unfilteredMyselfProducts.clear();
+        myselfProducts.clear();
+      }
+
+      final requestPage = _myProductsPage.value;
+      final requestLimit = myProductsPageSize;
+
+      Map<String, dynamic>? responseMeta;
+      final data = await _dashboardService.fetchMyselfProducts(
+        page: requestPage,
+        limit: requestLimit,
+        onMeta: (meta) => responseMeta = meta,
+      );
+
+      if (reset) {
+        _unfilteredMyselfProducts
+          ..clear()
+          ..addAll(data);
+      } else {
+        _unfilteredMyselfProducts.addAll(data);
+      }
+
       final filtered = _filterApartments(_unfilteredMyselfProducts);
       myselfProducts.value = filtered;
+
+      final hasNext = _metaHasNextPage(
+        meta: responseMeta,
+        fallbackFetchedCount: data.length,
+        limit: requestLimit,
+      );
+      _myProductsHasNextPage.value = hasNext;
+      if (hasNext) _myProductsPage.value = requestPage + 1;
+
       AppLoggerHelper.debug(
-        'Fetched ${_unfilteredMyselfProducts.length} own products; showing ${myselfProducts.length} after filters',
+        'Fetched page=$requestPage limit=$requestLimit own products: ${data.length}; totalLoaded=${_unfilteredMyselfProducts.length}; hasNext=$hasNext',
       );
     } catch (e) {
       errorMessage.value = e.toString();
-      _unfilteredMyselfProducts.clear();
-      myselfProducts.value = [];
+      if (reset) {
+        _unfilteredMyselfProducts.clear();
+        myselfProducts.value = [];
+        _myProductsHasNextPage.value = false;
+      }
+    }
+  }
+
+  Future<void> loadMoreMyProducts() async {
+    if (!canLoadMoreMyProducts) return;
+    isMyProductsLoadingMore.value = true;
+    try {
+      await fetchMyProducts(reset: false);
+    } finally {
+      isMyProductsLoadingMore.value = false;
     }
   }
 
@@ -250,7 +309,7 @@ class OwnerDashboardController extends GetxController {
     isDashboardLoading.value = true;
     try {
       if (_unfilteredMyselfProducts.isEmpty) {
-        await fetchMyProducts();
+        await fetchMyProducts(reset: true);
       } else {
         final filtered = _filterApartments(_unfilteredMyselfProducts);
         myselfProducts.value = filtered;
@@ -263,6 +322,36 @@ class OwnerDashboardController extends GetxController {
     } finally {
       isDashboardLoading.value = false;
     }
+  }
+
+  bool _metaHasNextPage({
+    required Map<String, dynamic>? meta,
+    required int fallbackFetchedCount,
+    required int limit,
+  }) {
+    if (meta == null) {
+      // Fallback: if we got less than requested, assume no more pages.
+      return fallbackFetchedCount >= limit;
+    }
+
+    final hasNext = meta['hasNextPage'];
+    if (hasNext is bool) return hasNext;
+    if (hasNext is String) return hasNext.toLowerCase() == 'true';
+
+    final currentPage = meta['page'];
+    final totalPage = meta['totalPage'] ?? meta['total_page'];
+    if (currentPage is int && totalPage is int) {
+      return currentPage < totalPage;
+    }
+
+    final total = meta['total'];
+    final skip = meta['skip'];
+    final metaLimit = meta['limit'];
+    if (total is int && skip is int && metaLimit is int) {
+      return (skip + metaLimit) < total;
+    }
+
+    return fallbackFetchedCount >= limit;
   }
 
   void clearFilters() {

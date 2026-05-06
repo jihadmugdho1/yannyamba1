@@ -34,7 +34,7 @@ class OwnerDashboardService {
 
       final response = await _networkCaller.getRequest(
         ApiConstants.getOwnerStats,
-        headers: {'Authorization': '$token'},
+        headers: {'Authorization': token},
       );
 
       AppLoggerHelper.debug('Response isSuccess: ${response.isSuccess}');
@@ -569,6 +569,9 @@ class OwnerDashboardService {
 
   Future<List<Apartment>> fetchMyselfProducts({
     String? propertyCategory,
+    int? page,
+    int? limit,
+    void Function(Map<String, dynamic>? meta)? onMeta,
   }) async {
     try {
       AppLoggerHelper.debug(
@@ -577,17 +580,21 @@ class OwnerDashboardService {
       final token = await StorageService.getToken();
 
       AppLoggerHelper.debug(
-        'MY products request: endpoint=${ApiConstants.getOwnerMyselfProducts} queryParams=${propertyCategory != null ? {'property_category': propertyCategory} : null}',
+        'MY products request: endpoint=${ApiConstants.getOwnerMyselfProducts} queryParams=${{if (propertyCategory != null) 'property_category': propertyCategory, if (page != null) 'page': page, if (limit != null) 'limit': limit}.isEmpty ? null : {if (propertyCategory != null) 'property_category': propertyCategory, if (page != null) 'page': page, if (limit != null) 'limit': limit}}',
       );
+
+      final queryParams = <String, dynamic>{
+        if (propertyCategory != null) 'property_category': propertyCategory,
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+      };
 
       final response = await _networkCaller.getRequest(
         ApiConstants.getOwnerMyselfProducts,
         headers: {
           if (token != null && token.isNotEmpty) 'Authorization': token,
         },
-        queryParams: propertyCategory != null
-            ? {'property_category': propertyCategory}
-            : null,
+        queryParams: queryParams.isEmpty ? null : queryParams,
       );
 
       AppLoggerHelper.debug(
@@ -603,6 +610,19 @@ class OwnerDashboardService {
 
       final data = response.responseData;
       if (data is Map && data['data'] != null && data['data'] is List) {
+        Map<String, dynamic>? meta;
+        if (data is Map<String, dynamic>) {
+          if (data['meta'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['meta']);
+          } else if (data['pagination'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['pagination']);
+          } else if (data['data'] is Map<String, dynamic> &&
+              data['data']['meta'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['data']['meta']);
+          }
+        }
+        if (onMeta != null) onMeta(meta);
+
         final List<dynamic> listJson = data['data'];
         AppLoggerHelper.debug(
           'MY products raw count ($propertyCategory): ${listJson.length}',

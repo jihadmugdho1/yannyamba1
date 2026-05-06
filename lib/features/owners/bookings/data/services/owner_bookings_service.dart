@@ -7,15 +7,25 @@ import 'package:yannyamba/features/owners/bookings/data/models/booking_models.da
 class OwnerBookingsService {
   final NetworkCaller _networkCaller = NetworkCaller();
 
-  Future<List<OwnerBooking>> fetchOwnerBookings() async {
+  Future<List<OwnerBooking>> fetchOwnerBookings({
+    int? page,
+    int? limit,
+    void Function(Map<String, dynamic>? meta)? onMeta,
+  }) async {
     try {
       AppLoggerHelper.debug('Fetching owner bookings...');
       final token = await StorageService.getToken();
       if (token == null) return [];
 
+      final queryParams = <String, dynamic>{
+        if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
+      };
+
       final response = await _networkCaller.getRequest(
         ApiConstants.getOwnerBookings,
         headers: {'Authorization': token},
+        queryParams: queryParams.isEmpty ? null : queryParams,
       );
 
       if (!response.isSuccess || response.responseData == null) {
@@ -28,6 +38,19 @@ class OwnerBookingsService {
 
       final data = response.responseData;
       if (data is Map && data['data'] is List) {
+        Map<String, dynamic>? meta;
+        if (data is Map<String, dynamic>) {
+          if (data['meta'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['meta']);
+          } else if (data['pagination'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['pagination']);
+          } else if (data['data'] is Map<String, dynamic> &&
+              data['data']['meta'] is Map<String, dynamic>) {
+            meta = Map<String, dynamic>.from(data['data']['meta']);
+          }
+        }
+        if (onMeta != null) onMeta(meta);
+
         return (data['data'] as List)
             .whereType<Map>()
             .map((e) => OwnerBooking.fromJson(e.cast<String, dynamic>()))

@@ -22,6 +22,7 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
   late final TabController _tabController;
   late final OwnerDashboardController _dashboardController;
   late final OwnerBookingsController _bookingsController;
+  late final ScrollController _bookingsScrollController;
 
   @override
   void initState() {
@@ -29,6 +30,8 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
     _dashboardController = Get.find<OwnerDashboardController>();
     _bookingsController = Get.find<OwnerBookingsController>();
     _tabController = TabController(length: 3, vsync: this);
+    _bookingsScrollController = ScrollController();
+    _bookingsScrollController.addListener(_onBookingsScroll);
 
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) return;
@@ -45,8 +48,22 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
 
   @override
   void dispose() {
+    _bookingsScrollController
+      ..removeListener(_onBookingsScroll)
+      ..dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onBookingsScroll() {
+    if (!_bookingsScrollController.hasClients) return;
+    final position = _bookingsScrollController.position;
+    if (position.maxScrollExtent <= 0) return;
+
+    const threshold = 200.0;
+    if (position.pixels >= position.maxScrollExtent - threshold) {
+      _bookingsController.loadMoreBookings();
+    }
   }
 
   @override
@@ -169,10 +186,25 @@ class _OwnerPropertiesScreenState extends State<OwnerPropertiesScreen>
       }
 
       return ListView.builder(
+        controller: _bookingsScrollController,
         padding: EdgeInsets.zero,
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: list.length,
+        itemCount:
+            list.length + (bookingsController.isLoadingMore.value ? 1 : 0),
         itemBuilder: (context, index) {
+          if (index >= list.length) {
+            return const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            );
+          }
+
           final booking = list[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),

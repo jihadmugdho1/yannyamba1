@@ -11,10 +11,17 @@ class FurnishedApartmentController extends GetxController {
   FurnishedApartmentController({required FurnishedApartmentService service})
     : _service = service;
 
+  static const int pageSize = 5;
+
   // Observable state
   final apartments = <FurnishedApartment>[].obs;
   final isLoading = false.obs;
   final errorMessage = ''.obs;
+
+  // Pagination state
+  final _page = 1.obs;
+  final _hasNextPage = true.obs;
+  final isLoadingMore = false.obs;
 
   // Filtered apartments as observable
   final filteredApartments = <FurnishedApartment>[].obs;
@@ -48,21 +55,44 @@ class FurnishedApartmentController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchFurnishedApartments();
+    fetchFurnishedApartments(reset: true);
   }
 
   /// Fetch furnished apartments from service
-  Future<void> fetchFurnishedApartments() async {
-    try {
-      isLoading.value = true;
-      errorMessage.value = '';
+  bool get canLoadMore =>
+      _hasNextPage.value && !isLoading.value && !isLoadingMore.value;
 
-      final data = await _service.fetchFurnishedApartments();
-      apartments.value = data;
+  Future<void> fetchFurnishedApartments({required bool reset}) async {
+    try {
+      if (reset) {
+        isLoading.value = true;
+        errorMessage.value = '';
+        _page.value = 1;
+        _hasNextPage.value = true;
+        apartments.clear();
+        filteredApartments.clear();
+      }
+
+      final requestPage = _page.value;
+      final requestLimit = pageSize;
+
+      Map<String, dynamic>? responseMeta;
+      final data = await _service.fetchFurnishedApartments(
+        page: requestPage,
+        limit: requestLimit,
+        onMeta: (meta) => responseMeta = meta,
+      );
+      if (reset) {
+        apartments.value = data;
+      } else {
+        apartments.addAll(data);
+      }
 
       // Update price range to accommodate all apartments if no filter has been applied yet
-      if (data.isNotEmpty && priceRange[0] == 0 && priceRange[1] == 1000) {
-        final maxPrice = data
+      if (apartments.isNotEmpty &&
+          priceRange[0] == 0 &&
+          priceRange[1] == 1000) {
+        final maxPrice = apartments
             .map((apt) => apt.dailyRate)
             .reduce((a, b) => a > b ? a : b);
         // Set range to show all apartments, with some buffer
@@ -75,17 +105,63 @@ class FurnishedApartmentController extends GetxController {
       // Update filtered apartments
       _updateFilteredApartments();
 
+      final hasNext = _metaHasNextPage(
+        meta: responseMeta,
+        fallbackFetchedCount: data.length,
+        limit: requestLimit,
+      );
+      _hasNextPage.value = hasNext;
+      if (hasNext) _page.value = requestPage + 1;
+
       AppLoggerHelper.debug(
         'Fetched ${apartments.length} apartments, filtered: ${filteredApartments.length}',
       );
     } catch (e) {
       errorMessage.value =
           'Failed to load furnished apartments: ${e.toString()}';
-      apartments.value = [];
-      filteredApartments.value = [];
+      if (reset) {
+        apartments.value = [];
+        filteredApartments.value = [];
+        _hasNextPage.value = false;
+      }
     } finally {
-      isLoading.value = false;
+      if (reset) isLoading.value = false;
     }
+  }
+
+  Future<void> loadMore() async {
+    if (!canLoadMore) return;
+    isLoadingMore.value = true;
+    try {
+      await fetchFurnishedApartments(reset: false);
+    } finally {
+      isLoadingMore.value = false;
+    }
+  }
+
+  bool _metaHasNextPage({
+    required Map<String, dynamic>? meta,
+    required int fallbackFetchedCount,
+    required int limit,
+  }) {
+    if (meta == null) return fallbackFetchedCount >= limit;
+
+    final hasNext = meta['hasNextPage'];
+    if (hasNext is bool) return hasNext;
+    if (hasNext is String) return hasNext.toLowerCase() == 'true';
+
+    final currentPage = meta['page'];
+    final totalPage = meta['totalPage'] ?? meta['total_page'];
+    if (currentPage is int && totalPage is int) return currentPage < totalPage;
+
+    final total = meta['total'];
+    final skip = meta['skip'];
+    final metaLimit = meta['limit'];
+    if (total is int && skip is int && metaLimit is int) {
+      return (skip + metaLimit) < total;
+    }
+
+    return fallbackFetchedCount >= limit;
   }
 
   /// Get filtered apartments based on criteria
@@ -388,7 +464,7 @@ class FurnishedApartmentController extends GetxController {
 
   /// Refresh apartments list
   Future<void> refreshApartments() async {
-    await fetchFurnishedApartments();
+    await fetchFurnishedApartments(reset: true);
   }
 
   /// Get available amenities from all apartments

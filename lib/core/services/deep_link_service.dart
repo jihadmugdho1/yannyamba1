@@ -265,7 +265,7 @@ class DeepLinkService {
           );
         }
 
-        await controller.fetchFurnishedApartments();
+        // await controller.fetchFurnishedApartments();
 
         // Close loading
         if (Get.isDialogOpen ?? false) {

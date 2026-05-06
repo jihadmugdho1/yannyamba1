@@ -56,10 +56,13 @@ class _HomeScreenState extends State<HomeScreen> {
     searchController.addListener(() {
       if (mounted) setState(() {});
     });
+
+    scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    scrollController.removeListener(_onScroll);
     scrollController.dispose();
     // Dispose search-related controllers
     try {
@@ -75,6 +78,17 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  void _onScroll() {
+    if (!scrollController.hasClients) return;
+    final position = scrollController.position;
+    if (position.maxScrollExtent <= 0) return;
+
+    const threshold = 200.0;
+    if (position.pixels >= position.maxScrollExtent - threshold) {
+      controller.loadMore();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,8 +102,6 @@ class _HomeScreenState extends State<HomeScreen> {
         showFilter: true,
         onSearchTap: _showCitySelectionBottomSheet,
         onFilterTap: () async {
-
-          
           await Get.to(() => FurnishedApartmentFilterScreen());
         },
       ),
@@ -224,6 +236,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       },
+                    ),
+                  ),
+                ),
+
+              if (controller.isLoadingMore.value)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8, bottom: 16),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
                 ),
@@ -436,7 +460,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

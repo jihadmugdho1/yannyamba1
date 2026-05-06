@@ -11,8 +11,42 @@ import '../widgets/filter_bottom_sheet.dart';
 import '../../../widgets/widgets.dart';
 import '../../controllers/owner_dashboard_controller.dart';
 
-class OwnersDashboardScreen extends StatelessWidget {
+class OwnersDashboardScreen extends StatefulWidget {
   const OwnersDashboardScreen({super.key});
+
+  @override
+  State<OwnersDashboardScreen> createState() => _OwnersDashboardScreenState();
+}
+
+class _OwnersDashboardScreenState extends State<OwnersDashboardScreen> {
+  late final ScrollController _myPropertiesScrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _myPropertiesScrollController = ScrollController();
+    _myPropertiesScrollController.addListener(_onMyPropertiesScroll);
+  }
+
+  @override
+  void dispose() {
+    _myPropertiesScrollController
+      ..removeListener(_onMyPropertiesScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onMyPropertiesScroll() {
+    if (!_myPropertiesScrollController.hasClients) return;
+    final controller = Get.find<OwnerDashboardController>();
+    final position = _myPropertiesScrollController.position;
+    if (position.maxScrollExtent <= 0) return;
+
+    const threshold = 200.0;
+    if (position.pixels >= position.maxScrollExtent - threshold) {
+      controller.loadMoreMyProducts();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,9 +156,29 @@ class OwnersDashboardScreen extends StatelessWidget {
                           if (all.isEmpty) return _buildEmptyPropertyState();
 
                           return ListView.builder(
+                            controller: _myPropertiesScrollController,
                             padding: EdgeInsets.zero,
-                            itemCount: all.length,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: all.length +
+                                (controller.isMyProductsLoadingMore.value
+                                    ? 1
+                                    : 0),
                             itemBuilder: (context, index) {
+                              if (index >= all.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.only(bottom: 16),
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+
                               final item = all[index];
 
                               // FurnishedApartment has dailyRate, Apartment has rent
