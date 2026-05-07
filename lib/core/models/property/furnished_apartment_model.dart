@@ -3,6 +3,7 @@ import 'contact_model.dart';
 import 'property_details_model.dart';
 import 'address_model.dart';
 
+
 /// Model for furnished apartments with daily/short-term rental capabilities
 class FurnishedApartment extends Apartment {
   final double dailyRate;
@@ -149,8 +150,8 @@ class FurnishedApartment extends Apartment {
       state: json['address']?['state'] ?? '',
       zipCode:
           json['address']?['zipCode'] ?? json['address']?['zip_code'] ?? '',
-      latitude: (json['address']?['latitude'] ?? 0.0).toDouble(),
-      longitude: (json['address']?['longitude'] ?? 0.0).toDouble(),
+      latitude: _parseDouble(json['address']?['latitude']),
+      longitude: _parseDouble(json['address']?['longitude']),
     );
 
     // Create contact from owner information
@@ -187,7 +188,7 @@ class FurnishedApartment extends Apartment {
     // Extract property details
     final propertyDetails = PropertyDetails(
       propertyType: json['property_category'] ?? 'Home',
-      squareFeet: (json['property_size'] ?? 0).toDouble(),
+      squareFeet: _parseDouble(json['property_size']),
       advanceMonths: 1,
       depositMonths: 1,
       distanceToDowntown: _parseDistance(json['distance_to_main_road']),
@@ -203,10 +204,9 @@ class FurnishedApartment extends Apartment {
       title: _generateTitle(json),
       address: address,
       type: json['listing_type'] ?? json['type'] ?? 'Furnished',
-      rent: (json['rent'] ?? 0.0).toDouble(),
-      advancePayment: (json['advancePayment'] ?? json['advance_payment'] ?? 0.0)
-          .toDouble(),
-      size: (json['property_size'] ?? json['size'] ?? 0.0).toDouble(),
+      rent: _parseDouble(json['rent'] ?? json['monthly_rent']),
+      advancePayment: _parseDouble(json['advancePayment'] ?? json['advance_payment']),
+      size: _parseDouble(json['property_size'] ?? json['size']),
       rooms: rooms,
       washrooms: washrooms,
       distanceToDowntown: _parseDistance(
@@ -223,7 +223,7 @@ class FurnishedApartment extends Apartment {
         json['building_amenities'] ?? json['amenities'] ?? [],
       ),
       details: json['details'] ?? json['about'] ?? '',
-      dailyRate: (json['daily_rate'] ?? json['dailyRate'] ?? 0.0).toDouble(),
+      dailyRate: _parseDouble(json['daily_rate'] ?? json['dailyRate']),
       minimumStay:
           json['minimum_stay_days'] ??
           json['minimumStay'] ??
@@ -253,6 +253,13 @@ class FurnishedApartment extends Apartment {
       totalViews: (json['viewedBy'] is List) ? json['viewedBy'].length : 0,
       inquiries: (json['queryBy'] is List) ? json['queryBy'].length : 0,
     );
+  }
+
+  static double _parseDouble(dynamic value, [double fallback = 0.0]) {
+    if (value == null) return fallback;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? fallback;
+    return fallback;
   }
 
   // Helper method to generate title from API data
@@ -476,7 +483,7 @@ class Booking {
       checkOutDate: DateTime.parse(
         json['checkOutDate'] ?? json['check_out_date'],
       ),
-      totalPrice: (json['totalPrice'] ?? json['total_price'] ?? 0.0).toDouble(),
+      totalPrice: FurnishedApartment._parseDouble(json['totalPrice'] ?? json['total_price']),
       status: BookingStatus.values.firstWhere(
         (e) => e.toString().split('.').last == json['status'],
         orElse: () => BookingStatus.pending,

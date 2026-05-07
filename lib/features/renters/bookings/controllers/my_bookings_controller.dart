@@ -19,6 +19,12 @@ class MyBookingsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    ever<bool>(_authenticationController.isLoggedIn, (loggedIn) {
+      if (!loggedIn) {
+        bookings.clear();
+        errorMessage.value = '';
+      }
+    });
     if (_authenticationController.isLoggedIn.value) {
       fetchMyBookings();
     } else {

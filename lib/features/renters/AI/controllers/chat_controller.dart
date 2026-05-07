@@ -80,6 +80,13 @@ class ChatController extends GetxController {
     }
   }
 
+  void clearUserData() {
+    messages.clear();
+    _setError(null);
+    isTyping.value = false;
+    messageSizes.clear();
+  }
+
   void clearError() {
     _setError(null);
   }

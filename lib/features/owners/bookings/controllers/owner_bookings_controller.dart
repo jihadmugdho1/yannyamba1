@@ -55,6 +55,14 @@ class OwnerBookingsController extends GetxController {
     fetchOwnerBookings(reset: true);
   }
 
+  void clearUserData() {
+    bookings.clear();
+    apartmentBookings.clear();
+    errorMessage.value = '';
+    _bookingsPage.value = 1;
+    _bookingsHasNextPage.value = true;
+  }
+
   bool get canLoadMore =>
       _bookingsHasNextPage.value && !isLoading.value && !isLoadingMore.value;
 

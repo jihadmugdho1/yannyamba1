@@ -52,6 +52,21 @@ class OwnerDashboardController extends GetxController {
     loadDashboard();
   }
 
+  void clearUserData() {
+    dashboardStats.value = null;
+    properties.clear();
+    normalApartments.clear();
+    furnishedApartments.clear();
+    allProducts.clear();
+    myselfProducts.clear();
+    homeProducts.clear();
+    officeProducts.clear();
+    _unfilteredMyselfProducts.clear();
+    errorMessage.value = '';
+    _myProductsPage.value = 1;
+    _myProductsHasNextPage.value = true;
+  }
+
   Future<void> loadDashboard() async {
     try {
       isDashboardLoading.value = true;

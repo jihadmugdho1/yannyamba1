@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import '../data/services/authentication_service.dart';
 import '../../../common/navigation/navigation_helper.dart';
+import '../../../owners/dashboard/controllers/owner_dashboard_controller.dart';
+import '../../../owners/bookings/controllers/owner_bookings_controller.dart';
+import '../../../renters/AI/controllers/chat_controller.dart';
 
 enum AuthMode { login, register }
 
@@ -225,6 +228,18 @@ class AuthenticationController extends GetxController {
 
   Future<void> logout() async {
     await authenticationService.logout();
+
+    // Clear user-specific data in all persistent controllers
+    if (Get.isRegistered<OwnerDashboardController>()) {
+      Get.find<OwnerDashboardController>().clearUserData();
+    }
+    if (Get.isRegistered<OwnerBookingsController>()) {
+      Get.find<OwnerBookingsController>().clearUserData();
+    }
+    if (Get.isRegistered<ChatController>()) {
+      Get.find<ChatController>().clearUserData();
+    }
+
     isLoggedIn.value = false;
     switchToLogin(clearPhone: true);
   }
