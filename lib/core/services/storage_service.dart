@@ -16,6 +16,7 @@ class StorageService {
 
   static Future<void> _ensureInitialized() async {
     _preferences ??= await SharedPreferences.getInstance();
+  
   }
 
   // Initialize SharedPreferences (call this during app startup)

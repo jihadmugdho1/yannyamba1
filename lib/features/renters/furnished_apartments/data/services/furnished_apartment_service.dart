@@ -8,10 +8,70 @@ class FurnishedApartmentService {
   FurnishedApartmentService({NetworkCaller? networkCaller})
     : _networkCaller = networkCaller ?? NetworkCaller();
 
+  void _debugDumpApartmentsJson(
+    List<dynamic> apartmentsJson, {
+    required String effectiveListingType,
+  }) {
+    try {
+      AppLoggerHelper.debug(
+        '[FurnishedApartmentService] listing_type request = "$effectiveListingType", items = ${apartmentsJson.length}',
+      );
+
+      final Map<String, int> listingTypeCounts = {};
+      int hasDailyRateKey = 0;
+      int hasDailyRateValue = 0;
+      int hasRentKey = 0;
+
+      for (final item in apartmentsJson) {
+        if (item is! Map) continue;
+        final listingType = (item['listing_type'] ?? item['type'] ?? 'unknown')
+            .toString();
+        listingTypeCounts[listingType] =
+            (listingTypeCounts[listingType] ?? 0) + 1;
+
+        final hasDailyKey =
+            item.containsKey('daily_rate') || item.containsKey('dailyRate');
+        if (hasDailyKey) {
+          hasDailyRateKey++;
+          final value = item['daily_rate'] ?? item['dailyRate'];
+          if (value != null && value.toString().trim().isNotEmpty) {
+            hasDailyRateValue++;
+          }
+        }
+
+        if (item.containsKey('rent') || item.containsKey('monthly_rent')) {
+          hasRentKey++;
+        }
+      }
+
+      AppLoggerHelper.debug(
+        '[FurnishedApartmentService] listing_type counts = $listingTypeCounts',
+      );
+      AppLoggerHelper.debug(
+        '[FurnishedApartmentService] daily_rate key present = $hasDailyRateKey, value present = $hasDailyRateValue, rent key present = $hasRentKey',
+      );
+
+      for (var i = 0; i < apartmentsJson.length && i < 3; i++) {
+        final item = apartmentsJson[i];
+        if (item is! Map) continue;
+        AppLoggerHelper.debug(
+          '[FurnishedApartmentService] sample[$i] id=${item['_id'] ?? item['id']} listing_type=${item['listing_type'] ?? item['type']} daily_rate=${item['daily_rate'] ?? item['dailyRate']} rent=${item['rent'] ?? item['monthly_rent']}',
+        );
+      }
+    } catch (e) {
+      AppLoggerHelper.debug(
+        '[FurnishedApartmentService] debug dump failed: $e',
+      );
+    }
+  }
+
   /// Fetch all furnished apartments from API
   ///
   /// NOTE: Backend `GET /product/get-all` returns all products by default.
   /// If you pass [listingType], it will request a filtered result from API.
+  /// By default this service requests `Furnished Apartment` only (to avoid
+  /// mixing listing types that don't have `daily_rate`, which causes missing
+  /// price values in renter UI cards).
   Future<List<FurnishedApartment>> fetchFurnishedApartments({
     String? listingType,
     int? page,
@@ -19,12 +79,15 @@ class FurnishedApartmentService {
     void Function(Map<String, dynamic>? meta)? onMeta,
   }) async {
     try {
+      final effectiveListingType =
+          (listingType == null || listingType.trim().isEmpty)
+          ? 'Furnished Apartment'
+          : listingType.trim();
       AppLoggerHelper.debug('Fetching furnished apartments...');
       final response = await _networkCaller.getRequest(
         ApiConstants.getAllProducts,
         queryParams: {
-          if (listingType != null && listingType.trim().isNotEmpty)
-            'listing_type': listingType.trim(),
+          'listing_type': effectiveListingType,
           if (page != null) 'page': page,
           if (limit != null) 'limit': limit,
         },
@@ -54,6 +117,11 @@ class FurnishedApartmentService {
 
           final List<dynamic> apartmentsJson = data['data'];
 
+          _debugDumpApartmentsJson(
+            apartmentsJson,
+            effectiveListingType: effectiveListingType,
+          );
+
           AppLoggerHelper.debug(
             'Found ${apartmentsJson.length} apartments in response',
           );
@@ -77,6 +145,7 @@ class FurnishedApartmentService {
           AppLoggerHelper.debug(
             'Successfully parsed ${apartments.length} apartments',
           );
+
           return apartments;
         } else {
           AppLoggerHelper.error(
