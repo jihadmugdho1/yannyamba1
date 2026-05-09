@@ -2,6 +2,7 @@ class AppText {
   AppText._();
 
   static const String appName = 'appName';
+  static const String enterwhatsappnum='enter_whatsappnumber';
   static const String phoneNumber = 'phone_number';
   static const String logIn = 'log_in';
   static const String createAccount = 'create_account';

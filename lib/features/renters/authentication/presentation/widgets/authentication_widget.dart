@@ -124,7 +124,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppText.phoneNumber.tr,
+                            AppText.enterwhatsappnum.tr,
                             style: getTextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -258,13 +258,66 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                   color: Colors.red.withValues(alpha: .08),
                                   borderRadius: BorderRadius.circular(10.r),
                                 ),
-                                child: Text(
-                                  errorMessage,
-                                  style: getTextStyle(
-                                    fontSize: 12,
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      errorMessage,
+                                      style: getTextStyle(
+                                        fontSize: 12,
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Spacer(),
+                                    if (errorMessage ==
+                                            "Account is not verified" ||
+                                        errorMessage ==
+                                            "Number already exist !!")
+                                      GestureDetector(
+                                        onTap: isLoading
+                                            ? null
+                                            : () async {
+                                                final currentError =
+                                                    errorMessage;
+                                                if (currentError ==
+                                                    "Number already exist !!") {
+                                                  controller.switchToLogin(
+                                                    clearPhone: false,
+                                                  );
+                                                  await controller.login();
+                                                } else {
+                                                  controller.switchToRegister(
+                                                    clearPhone: false,
+                                                  );
+                                                  await controller
+                                                      .sendVerificationCode();
+                                                }
+                                                controller.codeController
+                                                    .clear();
+                                                Get.to(
+                                                  () => const AuthenticationVerificationScreen(),
+                                                );
+                                              },
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 10.w,
+                                            vertical: 5.h,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primaryBlue,
+                                            borderRadius: BorderRadius.circular(8.r),
+                                          ),
+                                          child: Text(
+                                            AppText.verify,
+                                            style: getTextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             ),

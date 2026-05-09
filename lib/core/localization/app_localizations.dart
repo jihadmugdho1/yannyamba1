@@ -6,6 +6,7 @@ class AppLocalizations extends Translations {
   Map<String, Map<String, String>> get keys => {
     'en_US': {
       AppText.phoneNumber: 'Phone Number',
+      AppText.enterwhatsappnum: 'Enter Whatsapp Number ',
       AppText.logIn: 'Log In',
       AppText.createAccount: 'Create Account',
       AppText.dontHaveAnAccount: "Don't have an account? ",
@@ -444,6 +445,7 @@ class AppLocalizations extends Translations {
 
     'fr_FR': {
       AppText.phoneNumber: 'Numéro de téléphone',
+       AppText.enterwhatsappnum: 'Saisissez votre numéro WhatsApp',
       AppText.logIn: 'Se connecter',
       AppText.createAccount: 'Créer un compte',
       AppText.dontHaveAnAccount: "Vous n'avez pas de compte ? ",
